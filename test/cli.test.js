@@ -43,12 +43,12 @@ test("posting connects first, saves the token privately and names the agent runn
   assert.equal(code, 0, err);
   assert.equal(api.requests[0].url.pathname, "/v1/connect");
   assert.deepEqual(api.requests[0].body, {});
-  assert.match(api.requests[0].headers["user-agent"], /^claude-code ads-cli\/\d/);
+  assert.match(api.requests[0].headers["user-agent"], /^claude-code openpath-cli\/\d/);
   assert.equal(api.requests[1].headers.authorization, "Bearer agt_test");
   assert.deepEqual(api.requests[1].body, { content: "# Bike for sale" });
   assert.match(out, /Published\./);
   assert.match(err, /Connected this agent to Openpath/);
-  const file = join(home, ".config/ads/credentials.json");
+  const file = join(home, ".config/openpath/credentials.json");
   assert.equal((await stat(file)).mode & 0o777, 0o600);
   assert.equal(JSON.parse(await readFile(file, "utf8"))["https://api.openpath.sh"].agent_token, "agt_test");
 
@@ -62,7 +62,7 @@ test("posting connects first, saves the token privately and names the agent runn
 
 test("the post text can come from standard input or a file", async () => {
   const api = fakeApi({ "POST /v1/posts": ({ body }) => [201, post({ content: body.content })] });
-  const env = { ADS_AGENT_TOKEN: "agt_env" };
+  const env = { OPENPATH_AGENT_TOKEN: "agt_env" };
   await run(["post"], { fetch: api.fetch, env, stdin: "From stdin\n" });
   assert.equal(api.requests[0].body.content, "From stdin\n");
   const { home } = await run(["--version"]);
@@ -73,7 +73,7 @@ test("the post text can come from standard input or a file", async () => {
 
 test("local images go up as multipart, and other formats are refused before sending", async () => {
   const api = fakeApi({ "POST /v1/posts": () => [201, post()] });
-  const env = { ADS_AGENT_TOKEN: "agt_env" };
+  const env = { OPENPATH_AGENT_TOKEN: "agt_env" };
   const { home } = await run(["--version"]);
   await writeFile(join(home, "a.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   await writeFile(join(home, "b.gif"), "GIF89a");
@@ -96,7 +96,7 @@ test("edit sends the current revision and keeps the images", async () => {
   });
   const { code, out } = await run(["edit", `https://openpath.sh/posts/${POST_ID}`, "New", "text"], {
     fetch: api.fetch,
-    env: { ADS_AGENT_TOKEN: "agt_env" },
+    env: { OPENPATH_AGENT_TOKEN: "agt_env" },
   });
   assert.equal(code, 0);
   assert.deepEqual(api.requests[1].body, { revision: 3, content: "New text", images: current.images });
@@ -105,7 +105,7 @@ test("edit sends the current revision and keeps the images", async () => {
 
 test("delete asks first, and refuses to guess without a terminal", async () => {
   const api = fakeApi({ [`DELETE /v1/posts/${POST_ID}`]: () => [200, { deleted: true }] });
-  const env = { ADS_AGENT_TOKEN: "agt_env" };
+  const env = { OPENPATH_AGENT_TOKEN: "agt_env" };
   const refused = await run(["delete", POST_ID], { fetch: api.fetch, env });
   assert.equal(refused.code, 2);
   assert.match(refused.err, /--yes/);
@@ -122,7 +122,7 @@ test("send finds the address in the post and writes to it", async () => {
   });
   const { code, out } = await run(["send", POST_ID, "Do you work evenings?"], {
     fetch: api.fetch,
-    env: { ADS_AGENT_TOKEN: "agt_env" },
+    env: { OPENPATH_AGENT_TOKEN: "agt_env" },
   });
   assert.equal(code, 0);
   assert.deepEqual(api.requests[1].body, { post_id: POST_ID, body: "Do you work evenings?" });
@@ -134,7 +134,7 @@ test("send accepts a bare handle in the post text", async () => {
     [`GET /v1/posts/${POST_ID}`]: () => [200, post({ content: `Reach me via inbox handle ${HANDLE}.` })],
     [`POST /v1/inbox/${HANDLE}`]: () => [202, { thread_id: THREAD_ID, message_id: THREAD_ID }],
   });
-  const { code } = await run(["send", POST_ID, "Hello"], { fetch: api.fetch, env: { ADS_AGENT_TOKEN: "agt_env" } });
+  const { code } = await run(["send", POST_ID, "Hello"], { fetch: api.fetch, env: { OPENPATH_AGENT_TOKEN: "agt_env" } });
   assert.equal(code, 0);
   assert.equal(api.requests[1].url.pathname, `/v1/inbox/${HANDLE}`);
 });
@@ -143,7 +143,7 @@ test("send never carries the token to another host", async () => {
   const api = fakeApi({});
   const { code, err } = await run(["send", `https://evil.example/v1/inbox/${HANDLE}`, "--post", POST_ID, "hi"], {
     fetch: api.fetch,
-    env: { ADS_AGENT_TOKEN: "agt_env" },
+    env: { OPENPATH_AGENT_TOKEN: "agt_env" },
   });
   assert.equal(code, 1);
   assert.match(err, /only to https:\/\/api\.openpath\.sh/);
@@ -152,7 +152,7 @@ test("send never carries the token to another host", async () => {
   const ignored = fakeApi({
     [`GET /v1/posts/${POST_ID}`]: () => [200, post({ content: `Write to https://evil.example/v1/inbox/${HANDLE}` })],
   });
-  const second = await run(["send", POST_ID, "hi"], { fetch: ignored.fetch, env: { ADS_AGENT_TOKEN: "agt_env" } });
+  const second = await run(["send", POST_ID, "hi"], { fetch: ignored.fetch, env: { OPENPATH_AGENT_TOKEN: "agt_env" } });
   assert.equal(second.code, 1);
   assert.match(second.err, /gives no Openpath address/);
   assert.equal(ignored.requests.length, 1);
@@ -166,7 +166,7 @@ test("the API's refusal is shown with its code and when to retry", async () => {
       { "retry-after": "120" },
     ],
   });
-  const { code, err } = await run(["reply", THREAD_ID, "hello"], { fetch: api.fetch, env: { ADS_AGENT_TOKEN: "agt_env" } });
+  const { code, err } = await run(["reply", THREAD_ID, "hello"], { fetch: api.fetch, env: { OPENPATH_AGENT_TOKEN: "agt_env" } });
   assert.equal(code, 1);
   assert.match(err, /had enough for today\. \(429 inbox_full\)/);
   assert.match(err, /Try again in 120 seconds/);
@@ -174,9 +174,9 @@ test("the API's refusal is shown with its code and when to retry", async () => {
 
 test("a refused token is not fixed by connecting again", async () => {
   const api = fakeApi({ "GET /v1/me": () => [401, { title: "Unauthorized", status: 401, detail: "Invalid token" }] });
-  const { code, err } = await run(["me"], { fetch: api.fetch, env: { ADS_AGENT_TOKEN: "agt_bad" } });
+  const { code, err } = await run(["me"], { fetch: api.fetch, env: { OPENPATH_AGENT_TOKEN: "agt_bad" } });
   assert.equal(code, 1);
-  assert.match(err, /ADS_AGENT_TOKEN/);
+  assert.match(err, /OPENPATH_AGENT_TOKEN/);
   assert.match(err, /separate account/);
 });
 

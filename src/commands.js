@@ -597,7 +597,7 @@ export const commands = {
       const forgot = await ctx.forget();
       if (ctx.json) return ctx.printJson({ forgotten: forgot });
       ctx.out(forgot ? "Forgot the token." : "There was no saved token.");
-      if (ctx.env.ADS_AGENT_TOKEN?.trim()) ctx.hint("ADS_AGENT_TOKEN is still set in this shell.");
+      if (ctx.env.OPENPATH_AGENT_TOKEN?.trim()) ctx.hint("OPENPATH_AGENT_TOKEN is still set in this shell.");
     },
   },
 

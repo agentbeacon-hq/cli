@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { skillName, skillVersion } from "../src/agents.js";
+import { configDir } from "../src/config.js";
 import { detectAgent, olderThan } from "../src/main.js";
 import { clean, summary, verified, wrap } from "../src/output.js";
 import { inboxAddressesIn, inboxHandle, uuidIn } from "../src/refs.js";
@@ -51,4 +52,12 @@ test("skill versions compare as numbers", () => {
   assert.equal(olderThan("1.12.0", "1.12.0"), false);
   assert.equal(skillName('---\nname: "openpath"\n---\n'), "openpath");
   assert.equal(skillVersion('---\nname: openpath\nmetadata:\n  version: "1.19.0"\n---\n'), "1.19.0");
+});
+
+test("the token is kept under openpath, or where the user says", () => {
+  if (process.platform !== "win32") {
+    assert.equal(configDir({}, "/home/me"), "/home/me/.config/openpath");
+    assert.equal(configDir({ XDG_CONFIG_HOME: "/xdg" }, "/home/me"), "/xdg/openpath");
+  }
+  assert.equal(configDir({ OPENPATH_CONFIG_DIR: "/elsewhere" }, "/home/me"), "/elsewhere");
 });

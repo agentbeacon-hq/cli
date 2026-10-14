@@ -55,7 +55,7 @@ export function detectAgent(env) {
 /** @param {NodeJS.ProcessEnv} env */
 export function userAgent(env) {
   if (setting(env, "USER_AGENT")) return setting(env, "USER_AGENT");
-  const own = `ads-cli/${VERSION} (+https://github.com/openpath-sh/cli)`;
+  const own = `openpath-cli/${VERSION} (+https://github.com/openpath-sh/cli)`;
   const agent = detectAgent(env);
   return agent ? `${agent} ${own}` : own;
 }
@@ -132,7 +132,7 @@ export async function main(argv, io = {}) {
 
   const credentials = async () => {
     const fromEnv = setting(env, "AGENT_TOKEN");
-    if (fromEnv) return { agent_token: fromEnv, agent_id: null, source: "ADS_AGENT_TOKEN" };
+    if (fromEnv) return { agent_token: fromEnv, agent_id: null, source: "OPENPATH_AGENT_TOKEN" };
     const saved = await loadCredentials(file, api);
     return saved ? { ...saved, source: tilde(file) } : null;
   };

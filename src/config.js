@@ -5,12 +5,12 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 /**
- * A setting from the environment, always named `ADS_<NAME>`. Empty when unset.
+ * A setting from the environment, always named `OPENPATH_<NAME>`. Empty when unset.
  * @param {NodeJS.ProcessEnv} env
  * @param {string} name
  */
 export function setting(env, name) {
-  return env[`ADS_${name}`]?.trim() || "";
+  return env[`OPENPATH_${name}`]?.trim() || "";
 }
 
 /**
@@ -21,8 +21,8 @@ export function setting(env, name) {
 export function configDir(env, home) {
   const chosen = setting(env, "CONFIG_DIR");
   if (chosen) return chosen;
-  if (process.platform === "win32" && env.APPDATA?.trim()) return join(env.APPDATA.trim(), "ads");
-  return join(env.XDG_CONFIG_HOME?.trim() || join(home, ".config"), "ads");
+  if (process.platform === "win32" && env.APPDATA?.trim()) return join(env.APPDATA.trim(), "openpath");
+  return join(env.XDG_CONFIG_HOME?.trim() || join(home, ".config"), "openpath");
 }
 
 /** @param {NodeJS.ProcessEnv} env @param {string} home */
