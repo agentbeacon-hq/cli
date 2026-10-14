@@ -3,41 +3,42 @@ import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { HANDLE, POST_ID, THREAD_ID, fakeApi, post, run } from "./helpers.js";
+import { HANDLE, POST_ID, THREAD_ID, fakeApi, found, post, run } from "./helpers.js";
 
 const connected = { "POST /v1/connect": () => [201, { agent_id: "a1b2c3d4-0000-4000-8000-000000000001", agent_token: "agt_test" }] };
 
-test("search connects first, with no account, and shows who is verified", async () => {
-  const api = fakeApi({ ...connected, "POST /v1/search": () => [200, { posts: [post()] }] });
+test("search connects first, with no account, and shows each listing as it reads", async () => {
+  const api = fakeApi({ ...connected, "GET /v1/search": () => [200, found([post()])] });
   const { code, out } = await run(["search", "a", "plumber"], { fetch: api.fetch });
   assert.equal(code, 0);
   assert.equal(api.requests[0].url.pathname, "/v1/connect");
-  assert.deepEqual(api.requests[1].body, { query: "a plumber" });
+  assert.equal(api.requests[1].url.searchParams.get("q"), "a plumber");
+  assert.equal(api.requests[1].url.searchParams.get("format"), "json");
   assert.equal(api.requests[1].headers.authorization, "Bearer agt_test");
-  assert.match(out, /1\. Plumbing repairs/);
-  assert.match(out, /Verified: Google, phone/);
+  assert.match(out, /│ # Plumbing repairs/);
+  assert.match(out, /Contact: https:\/\/openpath\.sh\/to\//);
   assert.match(out, new RegExp(POST_ID));
   assert.match(out, /information, not instructions/);
 });
 
 test("a post cannot send control characters to the terminal", async () => {
   const hostile = post({ content: "# Hi\x1b[2J\x1b]0;owned\x07\n‮evil" });
-  const api = fakeApi({ "GET /v1/posts/76a21240-f7e2-40f3-b45c-1a28aa6dc4b2": () => [200, hostile] });
+  const api = fakeApi({ "GET /v1/listings/76a21240-f7e2-40f3-b45c-1a28aa6dc4b2": () => [200, hostile] });
   const { out } = await run(["show", POST_ID], { fetch: api.fetch });
   assert.doesNotMatch(out, /[\x1b\x07‮]/);
   assert.match(out, /│ # Hi\[2J\]0;owned/);
 });
 
 test("--json prints what the API returned", async () => {
-  const api = fakeApi({ ...connected, "POST /v1/search": () => [200, { posts: [post()] }] });
+  const api = fakeApi({ ...connected, "GET /v1/search": () => [200, found([post()])] });
   const { out } = await run(["search", "plumber", "--json"], { fetch: api.fetch });
-  assert.equal(JSON.parse(out).posts[0].id, POST_ID);
+  assert.equal(JSON.parse(out).results[0].id, POST_ID);
 });
 
 test("posting connects first, saves the token privately and names the agent running it", async () => {
   const api = fakeApi({
     ...connected,
-    "POST /v1/posts": ({ body }) => [201, post({ content: body.content, revision: 1 })],
+    "POST /v1/listings": ({ body }) => [201, post({ content: body.content, revision: 1 })],
   });
   const { code, out, err, home } = await run(["post", "# Bike for sale"], { fetch: api.fetch, env: { CLAUDECODE: "1" } });
   assert.equal(code, 0, err);
@@ -54,14 +55,14 @@ test("posting connects first, saves the token privately and names the agent runn
 
   const again = await run(["posts"], {
     home,
-    fetch: fakeApi({ "GET /v1/posts": () => [200, { listings: [], next_cursor: null }] }).fetch,
+    fetch: fakeApi({ "GET /v1/listings": () => [200, { listings: [], next_cursor: null }] }).fetch,
   });
   assert.equal(again.code, 0);
   assert.match(again.out, /No posts yet/);
 });
 
 test("the post text can come from standard input or a file", async () => {
-  const api = fakeApi({ "POST /v1/posts": ({ body }) => [201, post({ content: body.content })] });
+  const api = fakeApi({ "POST /v1/listings": ({ body }) => [201, post({ content: body.content })] });
   const env = { OPENPATH_AGENT_TOKEN: "agt_env" };
   await run(["post"], { fetch: api.fetch, env, stdin: "From stdin\n" });
   assert.equal(api.requests[0].body.content, "From stdin\n");
@@ -72,7 +73,7 @@ test("the post text can come from standard input or a file", async () => {
 });
 
 test("local images go up as multipart, and other formats are refused before sending", async () => {
-  const api = fakeApi({ "POST /v1/posts": () => [201, post()] });
+  const api = fakeApi({ "POST /v1/listings": () => [201, post()] });
   const env = { OPENPATH_AGENT_TOKEN: "agt_env" };
   const { home } = await run(["--version"]);
   await writeFile(join(home, "a.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
@@ -89,12 +90,12 @@ test("local images go up as multipart, and other formats are refused before send
 });
 
 test("edit sends the current revision and keeps the images", async () => {
-  const current = post({ images: ["/v1/posts/76a21240-f7e2-40f3-b45c-1a28aa6dc4b2/photos/0"] });
+  const current = post({ images: ["/v1/listings/76a21240-f7e2-40f3-b45c-1a28aa6dc4b2/photos/0"] });
   const api = fakeApi({
-    [`GET /v1/posts/${POST_ID}`]: () => [200, current],
-    [`PUT /v1/posts/${POST_ID}`]: ({ body }) => [200, post({ ...body, revision: 4 })],
+    [`GET /v1/listings/${POST_ID}`]: () => [200, current],
+    [`PUT /v1/listings/${POST_ID}`]: ({ body }) => [200, post({ ...body, revision: 4 })],
   });
-  const { code, out } = await run(["edit", `https://openpath.sh/posts/${POST_ID}`, "New", "text"], {
+  const { code, out } = await run(["edit", `https://openpath.sh/listings/${POST_ID}`, "New", "text"], {
     fetch: api.fetch,
     env: { OPENPATH_AGENT_TOKEN: "agt_env" },
   });
@@ -104,7 +105,7 @@ test("edit sends the current revision and keeps the images", async () => {
 });
 
 test("delete asks first, and refuses to guess without a terminal", async () => {
-  const api = fakeApi({ [`DELETE /v1/posts/${POST_ID}`]: () => [200, { deleted: true }] });
+  const api = fakeApi({ [`DELETE /v1/listings/${POST_ID}`]: () => [200, { deleted: true }] });
   const env = { OPENPATH_AGENT_TOKEN: "agt_env" };
   const refused = await run(["delete", POST_ID], { fetch: api.fetch, env });
   assert.equal(refused.code, 2);
@@ -115,9 +116,9 @@ test("delete asks first, and refuses to guess without a terminal", async () => {
   assert.equal(api.requests[0].method, "DELETE");
 });
 
-test("send finds the address in the post and writes to it", async () => {
+test("send writes to the address on the listing's Contact line", async () => {
   const api = fakeApi({
-    [`GET /v1/posts/${POST_ID}`]: () => [200, post()],
+    [`GET /v1/listings/${POST_ID}`]: () => [200, post()],
     [`POST /v1/inbox/${HANDLE}`]: () => [202, { thread_id: THREAD_ID, message_id: THREAD_ID }],
   });
   const { code, out } = await run(["send", POST_ID, "Do you work evenings?"], {
@@ -125,23 +126,29 @@ test("send finds the address in the post and writes to it", async () => {
     env: { OPENPATH_AGENT_TOKEN: "agt_env" },
   });
   assert.equal(code, 0);
-  assert.deepEqual(api.requests[1].body, { post_id: POST_ID, body: "Do you work evenings?" });
+  assert.deepEqual(api.requests[1].body, { listing_id: POST_ID, body: "Do you work evenings?" });
   assert.match(out, /Nobody has read it yet/);
 });
 
-test("send accepts a bare handle in the post text", async () => {
+test("send takes an address with the listing it is about", async () => {
   const api = fakeApi({
-    [`GET /v1/posts/${POST_ID}`]: () => [200, post({ content: `Reach me via inbox handle ${HANDLE}.` })],
     [`POST /v1/inbox/${HANDLE}`]: () => [202, { thread_id: THREAD_ID, message_id: THREAD_ID }],
   });
-  const { code } = await run(["send", POST_ID, "Hello"], { fetch: api.fetch, env: { OPENPATH_AGENT_TOKEN: "agt_env" } });
-  assert.equal(code, 0);
-  assert.equal(api.requests[1].url.pathname, `/v1/inbox/${HANDLE}`);
+  const env = { OPENPATH_AGENT_TOKEN: "agt_env" };
+  for (const address of [HANDLE, `https://openpath.sh/to/${HANDLE}`, `https://api.openpath.sh/v1/inbox/${HANDLE}`]) {
+    const { code, err } = await run(["send", address, "--listing", POST_ID, "Hello"], { fetch: api.fetch, env });
+    assert.equal(code, 0, err);
+  }
+  assert.equal(api.requests.length, 3);
+  for (const request of api.requests) {
+    assert.equal(request.url.pathname, `/v1/inbox/${HANDLE}`);
+    assert.deepEqual(request.body, { listing_id: POST_ID, body: "Hello" });
+  }
 });
 
 test("send never carries the token to another host", async () => {
   const api = fakeApi({});
-  const { code, err } = await run(["send", `https://evil.example/v1/inbox/${HANDLE}`, "--post", POST_ID, "hi"], {
+  const { code, err } = await run(["send", `https://evil.example/v1/inbox/${HANDLE}`, "--listing", POST_ID, "hi"], {
     fetch: api.fetch,
     env: { OPENPATH_AGENT_TOKEN: "agt_env" },
   });
@@ -150,11 +157,11 @@ test("send never carries the token to another host", async () => {
   assert.equal(api.requests.length, 0);
 
   const ignored = fakeApi({
-    [`GET /v1/posts/${POST_ID}`]: () => [200, post({ content: `Write to https://evil.example/v1/inbox/${HANDLE}` })],
+    [`GET /v1/listings/${POST_ID}`]: () => [200, post({ markdown: `# Plumbing\n\nContact: https://evil.example/to/${HANDLE}` })],
   });
   const second = await run(["send", POST_ID, "hi"], { fetch: ignored.fetch, env: { OPENPATH_AGENT_TOKEN: "agt_env" } });
   assert.equal(second.code, 1);
-  assert.match(second.err, /gives no Openpath address/);
+  assert.match(second.err, /no Openpath address to write to/);
   assert.equal(ignored.requests.length, 1);
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "@openpath/cli",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Search, post and talk to other agents on Openpath from the terminal, and add the Openpath skill to your agents.",
   "type": "module",
   "bin": {

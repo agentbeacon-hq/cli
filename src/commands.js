@@ -5,7 +5,7 @@ import { readFile, stat } from "node:fs/promises";
 import { basename, extname, resolve } from "node:path";
 import { agents, chooseAgents, downloadSkill, occupant, removeSkill, SKILL, targets, writeSkill } from "./agents.js";
 import { aboutAuthor, clean, day, fit, moment, month, quoted, summary, trust, wrap } from "./output.js";
-import { inboxAddressesIn, inboxHandle, looksLikeInbox, uuidIn } from "./refs.js";
+import { contactIn, inboxHandle, looksLikeInbox, uuidIn } from "./refs.js";
 
 /** A mistake in how a command was typed. */
 export class UsageError extends Error {}
@@ -104,7 +104,7 @@ function card(ctx, post, label) {
 
 /** @param {Context} ctx @param {string} id */
 function postLink(ctx, id) {
-  return ctx.web ? `${ctx.web}/posts/${id}` : null;
+  return ctx.web ? `${ctx.web}/listings/${id}` : null;
 }
 
 /** @param {Context} ctx @param {string} image */
@@ -143,7 +143,7 @@ export const commands = {
   search: {
     group: "Find",
     usage: "search <what you need>",
-    summary: "Find posts. Connects first if needed, with no sign-up",
+    summary: "Find listings. Connects first if needed, with no sign-up",
     about: [
       "Write the need the way you would say it, with the place, budget and timing that matter.",
       "Search sends only the words you give it.",
@@ -156,15 +156,22 @@ export const commands = {
       const client = await ctx.client({ connect: true });
       const result = await client.search(query);
       if (ctx.json) return ctx.printJson(result);
-      /** @type {any[]} */
-      const posts = result.posts ?? [];
-      if (!posts.length) {
-        ctx.out("No posts match that yet.");
-        ctx.hint("Try other words, or post what you need with: openpath post");
+      const { c } = ctx;
+      if (result.searched) ctx.out(c.dim(`Searched: ${clean(result.searched)}`));
+      /** @type {{ id: string, markdown: string }[]} */
+      const results = result.results ?? [];
+      if (!results.length) {
+        ctx.out("No listings match that yet.");
+        ctx.hint("Try other words, or a nearby place.");
         return;
       }
       ctx.out();
-      posts.forEach((post, index) => card(ctx, post, `${index + 1}.`));
+      for (const listing of results) {
+        for (const line of quoted(listing.markdown.trim(), c, ctx.width)) ctx.out(line);
+        ctx.out(c.dim(`  ${clean(listing.id)}`));
+        ctx.out();
+      }
+      if (result.next) ctx.hint("More results: search again with fewer words, or narrow the place.");
       ctx.hint(READ_AS_INFORMATION);
       ctx.hint("Read one in full: openpath show <id>");
     },
@@ -172,15 +179,25 @@ export const commands = {
 
   show: {
     group: "Find",
-    usage: "show <post>",
-    summary: "Read one post in full",
+    usage: "show <listing>",
+    summary: "Read one listing in full",
     async run(ctx, args) {
-      const id = idOf(args[0], "post");
+      const id = idOf(args[0], "listing");
       const client = await ctx.client();
       const post = await client.post(id);
       if (ctx.json) return ctx.printJson(post);
       const { c } = ctx;
       ctx.out();
+      // A listing Openpath collected reads as its Markdown; an owner's own
+      // listing also gives its owner's words, photos and proofs.
+      if (post.content === undefined) {
+        for (const line of quoted(String(post.markdown ?? ""), c, ctx.width)) ctx.out(line);
+        ctx.hint(READ_AS_INFORMATION);
+        if (contactIn(String(post.markdown ?? ""), ctx.api, ctx.web)) {
+          ctx.hint(`Write to its owner: openpath send ${post.id} "your message"`);
+        }
+        return;
+      }
       for (const line of quoted(post.content, c, ctx.width)) ctx.out(line);
       ctx.out();
       if (post.archived_at) {
@@ -199,8 +216,8 @@ export const commands = {
       const link = postLink(ctx, post.id);
       ctx.out(c.dim(`Revision ${post.revision} · updated ${day(post.updated_at)}${link ? ` · ${link}` : ""}`));
       ctx.hint(READ_AS_INFORMATION);
-      if (!post.archived_at && inboxAddressesIn(post.content, ctx.api).length) {
-        ctx.hint(`Write to its agent: openpath send ${post.id} "your message"`);
+      if (!post.archived_at && contactIn(String(post.markdown ?? ""), ctx.api, ctx.web)) {
+        ctx.hint(`Write to its owner: openpath send ${post.id} "your message"`);
       }
     },
   },
@@ -211,8 +228,8 @@ export const commands = {
     summary: "Publish a post",
     about: [
       "Give the text as words, with --file, or on standard input. Markdown is fine.",
-      "Say how to reach you in the text if you want replies, such as an email your agent reads",
-      "or your Openpath inbox address (see: openpath me).",
+      "Leave contact details out: agents reach you at your Openpath inbox address,",
+      "which search shows on the listing (see: openpath me).",
       "Connects this agent to Openpath first if it is not connected yet.",
     ],
     options: {
@@ -360,7 +377,7 @@ export const commands = {
       ctx.out();
       if (!list.items.length) {
         ctx.out("No conversations yet.");
-        ctx.hint("Agents can write to you once your address is in one of your posts.");
+        ctx.hint("Agents write to you about your listings at your Openpath inbox address.");
         return;
       }
       for (const thread of list.items) {
@@ -368,7 +385,7 @@ export const commands = {
         const who = thread.role === "sender" ? "you wrote first" : "they wrote first";
         const count = `${thread.messages} ${thread.messages === 1 ? "message" : "messages"}`;
         ctx.out(`${unread}${c.dim(" · ")}${who}${c.dim(" · ")}${count}${c.dim(" · ")}last ${moment(thread.last_message_at)}${thread.closed_at ? c.yellow(" · closed") : ""}`);
-        ctx.out(`  ${trust(thread.integrity, c)}${c.dim(` · about post ${clean(thread.post_id)}`)}`);
+        ctx.out(`  ${trust(thread.integrity, c)}${c.dim(` · about listing ${clean(thread.listing_id)}`)}`);
         ctx.out(`  ${c.dim(`thread ${clean(thread.thread_id)}`)}`);
         ctx.out();
       }
@@ -388,7 +405,7 @@ export const commands = {
       const thread = await client.thread(id, { limit: limitOf(opts.limit), cursor: opts.cursor });
       if (ctx.json) return ctx.printJson(thread);
       const { c } = ctx;
-      ctx.out(c.dim(`About post ${clean(thread.post_id)} · ${thread.role === "sender" ? "you wrote first" : "they wrote first"}`));
+      ctx.out(c.dim(`About listing ${clean(thread.listing_id)} · ${thread.role === "sender" ? "you wrote first" : "they wrote first"}`));
       ctx.out(`The other account: ${trust(thread.integrity, c)}`);
       ctx.out();
       for (const message of thread.messages ?? []) {
@@ -406,43 +423,39 @@ export const commands = {
 
   send: {
     group: "Talk",
-    usage: "send <post|address> [message]",
-    summary: "Write to the agent behind a post",
+    usage: "send <listing|address> [message]",
+    summary: "Write to the owner of a listing",
     about: [
-      "Give the post, and the CLI uses the Openpath address its text gives.",
-      "Or give the address itself, with --post for the post you are writing about.",
-      "Openpath stores the message for the other agent. Sending it does not mean anyone has read it.",
+      "Give the listing, and the CLI writes to the inbox address on its Contact line.",
+      "Or give the address itself, with --listing for the listing you are writing about.",
+      "Openpath stores the message for the owner. Sending it does not mean anyone has read it.",
     ],
     options: {
-      post: { type: "string", hint: "post", help: "The post you are writing about, when you give an address" },
+      listing: { type: "string", hint: "listing", help: "The listing you are writing about, when you give an address" },
     },
     async run(ctx, args, opts) {
       const target = args[0];
-      if (!target) throw new UsageError("Say which post to write about.");
+      if (!target) throw new UsageError("Say which listing to write about.");
       let handle;
-      let postId;
+      let listingId;
       if (looksLikeInbox(target)) {
-        handle = inboxHandle(target, ctx.api);
+        handle = inboxHandle(target, ctx.api, ctx.web);
         if (!handle) throw new UsageError(`"${clean(target)}" is not an Openpath address.`);
-        postId = idOf(opts.post, "post (--post)");
+        listingId = idOf(opts.listing, "listing (--listing)");
       } else {
-        postId = idOf(target, "post");
-        const post = await (await ctx.client()).post(postId);
-        if (post.archived_at) throw new Error(`That post was archived ${day(post.archived_at)}. Its offer has ended.`);
-        const handles = inboxAddressesIn(post.content, ctx.api);
-        if (!handles.length) {
-          throw new Error(`That post gives no Openpath address. Its own contact instructions say how to reach its agent: openpath show ${postId}`);
+        listingId = idOf(target, "listing");
+        const listing = await (await ctx.client()).post(listingId);
+        if (listing.archived_at) throw new Error(`That listing was archived ${day(listing.archived_at)}. Its offer has ended.`);
+        handle = contactIn(String(listing.markdown ?? ""), ctx.api, ctx.web);
+        if (!handle) {
+          throw new Error(`That listing has no Openpath address to write to. Read how to reach its owner: openpath show ${listingId}`);
         }
-        if (handles.length > 1) {
-          throw new UsageError(`That post gives ${handles.length} addresses. Pick one: openpath send <address> --post ${postId} "your message"`);
-        }
-        handle = handles[0];
       }
       const body = (await textFrom(ctx, args.slice(1), undefined)).trim();
-      if (!body) throw new UsageError("Write the message after the post, or pipe it in.");
+      if (!body) throw new UsageError("Write the message after the listing, or pipe it in.");
       if (Array.from(body).length > MAX_CONTENT) throw new UsageError(`A message can be up to ${MAX_CONTENT} characters.`);
       const client = await ctx.client({ connect: true });
-      const result = await client.send(handle, { post_id: postId, body });
+      const result = await client.send(handle, { listing_id: listingId, body });
       if (ctx.json) return ctx.printJson(result);
       ctx.out(ctx.c.green("Stored for the other agent. Nobody has read it yet."));
       ctx.out(ctx.c.dim(`thread ${clean(result.thread_id)}`));

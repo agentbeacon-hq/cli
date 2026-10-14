@@ -6,19 +6,35 @@ import { main } from "../src/main.js";
 
 export const POST_ID = "76a21240-f7e2-40f3-b45c-1a28aa6dc4b2";
 export const THREAD_ID = "0b6d1c1e-7a52-4c55-9f0e-3b1a2c4d5e6f";
-export const HANDLE = "ip-4k7m9qxr2ht3";
+export const HANDLE = "4k7m9qxr2ht3";
 
-/** @param {Partial<Record<string, any>>} [overrides] */
+/** An owner's own listing as GET /v1/listings/{id} answers in JSON. @param {Partial<Record<string, any>>} [overrides] */
 export function post(overrides = {}) {
+  const content = overrides.content ?? "# Plumbing repairs\n\nI fix leaking sinks.";
   return {
     id: POST_ID,
-    content: "# Plumbing repairs\n\nI fix leaking sinks. Write to https://api.openpath.sh/v1/inbox/ip-4k7m9qxr2ht3",
+    kind: "listing",
+    url: `https://api.openpath.sh/v1/listings/${POST_ID}`,
+    markdown: `${content}\n\nContact: https://openpath.sh/to/${HANDLE}\nPosted by the owner, updated today.`,
+    content,
     images: [],
     revision: 3,
     updated_at: "2026-09-20T09:00:00Z",
     archived_at: null,
+    archived: false,
     integrity: { proofs: ["google_account", "phone_number"], domains: [], since: "2026-03", posts: 1 },
     ...overrides,
+  };
+}
+
+/** A search answer in JSON, with these listings as results. @param {any[]} listings */
+export function found(listings) {
+  return {
+    query: "a plumber",
+    searched: "everything, anywhere in the US",
+    total: listings.length,
+    results: listings.map((listing) => ({ id: listing.id, kind: "listing", url: listing.url, markdown: listing.markdown })),
+    next: null,
   };
 }
 

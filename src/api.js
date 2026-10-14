@@ -85,24 +85,24 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     domains: () => request("GET", "/v1/me/domains", { auth: "required" }),
     /** @param {string} domain */
     addDomain: (domain) => request("POST", "/v1/me/domains", { body: { domain }, auth: "required" }),
-    /** @param {string} query */
-    search: (query) => request("POST", "/v1/search", { body: { query }, auth: "required" }),
+    /** Search, answered as JSON: each result's Markdown, id and link. @param {string} query */
+    search: (query) => request("GET", "/v1/search", { query: { q: query, format: "json" }, auth: "required" }),
     /** @param {{ limit?: number, cursor?: string }} [page] */
-    posts: (page = {}) => request("GET", "/v1/posts", { query: page, auth: "required" }),
-    /** @param {string} post */
-    post: (post) => request("GET", `/v1/posts/${id(post)}`, { auth: "optional" }),
+    posts: (page = {}) => request("GET", "/v1/listings", { query: page, auth: "required" }),
+    /** One listing in JSON. An owner reading their own also gets its words, photos and revision. @param {string} post */
+    post: (post) => request("GET", `/v1/listings/${id(post)}`, { auth: "optional" }),
     /** @param {{ content: string, images?: string[] }} input */
-    publish: (input) => request("POST", "/v1/posts", { body: input, auth: "required" }),
+    publish: (input) => request("POST", "/v1/listings", { body: input, auth: "required" }),
     /** @param {FormData} form */
-    publishForm: (form) => request("POST", "/v1/posts", { form, auth: "required" }),
+    publishForm: (form) => request("POST", "/v1/listings", { form, auth: "required" }),
     /** @param {string} post @param {{ revision: number, content: string, images: string[] }} input */
-    replace: (post, input) => request("PUT", `/v1/posts/${id(post)}`, { body: input, auth: "required" }),
+    replace: (post, input) => request("PUT", `/v1/listings/${id(post)}`, { body: input, auth: "required" }),
     /** @param {string} post */
-    remove: (post) => request("DELETE", `/v1/posts/${id(post)}`, { auth: "required" }),
+    remove: (post) => request("DELETE", `/v1/listings/${id(post)}`, { auth: "required" }),
     /** @param {string} post */
-    archive: (post) => request("POST", `/v1/posts/${id(post)}/archive`, { body: {}, auth: "required" }),
+    archive: (post) => request("POST", `/v1/listings/${id(post)}/archive`, { body: {}, auth: "required" }),
     /** @param {string} post */
-    restore: (post) => request("POST", `/v1/posts/${id(post)}/restore`, { body: {}, auth: "required" }),
+    restore: (post) => request("POST", `/v1/listings/${id(post)}/restore`, { body: {}, auth: "required" }),
     /** @param {{ limit?: number, cursor?: string }} [page] */
     inbox: (page = {}) => request("GET", "/v1/inbox", { query: page, auth: "required" }),
     inboxMe: () => request("GET", "/v1/inbox/me", { auth: "required" }),
@@ -116,7 +116,7 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     /** @param {string} thread @param {{ reason: string, block: boolean }} input */
     report: (thread, input) =>
       request("POST", `/v1/inbox/threads/${id(thread)}/reports`, { body: input, auth: "required" }),
-    /** @param {string} handle @param {{ post_id: string, body: string }} input */
+    /** @param {string} handle @param {{ listing_id: string, body: string }} input */
     send: (handle, input) => request("POST", `/v1/inbox/${id(handle)}`, { body: input, auth: "required" }),
   };
 }
