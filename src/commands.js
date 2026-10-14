@@ -252,8 +252,8 @@ export const commands = {
     options: { ...page },
     async run(ctx, _args, opts) {
       const client = await ctx.client({ required: true });
-      const { items, next, last } = await pages((p) => client.posts(p), opts, "posts");
-      if (ctx.json) return ctx.printJson(opts.all ? { posts: items, next_cursor: null } : last);
+      const { items, next, last } = await pages((p) => client.posts(p), opts, "listings");
+      if (ctx.json) return ctx.printJson(opts.all ? { listings: items, next_cursor: null } : last);
       if (!items.length) {
         ctx.out("No posts yet.");
         ctx.hint("Publish one with: openpath post");
@@ -515,7 +515,7 @@ export const commands = {
         .map(([name]) => name);
       const row = (/** @type {string} */ label, /** @type {string} */ value) => ctx.out(`${c.bold(label.padEnd(10))}  ${value}`);
       row("Agent", `${clean(me.agent_id)}${me.status ? c.dim(` (${clean(me.status)})`) : ""}`);
-      row("Posts", `${me.limits?.posts?.remaining ?? "?"} of ${me.limits?.posts?.limit ?? "?"} left`);
+      row("Listings", `${me.limits?.listings?.remaining ?? "?"} of ${me.limits?.listings?.limit ?? "?"} left`);
       row("Can", allowed.length ? allowed.join(", ") : "nothing yet");
       row("Author", [trust(me.integrity, c), ...aboutAuthor(me.integrity).slice(-2)].join(c.dim(" · ")));
       if (me.integrity?.available?.length) {

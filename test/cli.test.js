@@ -54,7 +54,7 @@ test("posting connects first, saves the token privately and names the agent runn
 
   const again = await run(["posts"], {
     home,
-    fetch: fakeApi({ "GET /v1/posts": () => [200, { posts: [], next_cursor: null }] }).fetch,
+    fetch: fakeApi({ "GET /v1/posts": () => [200, { listings: [], next_cursor: null }] }).fetch,
   });
   assert.equal(again.code, 0);
   assert.match(again.out, /No posts yet/);
