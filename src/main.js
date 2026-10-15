@@ -132,7 +132,7 @@ export async function main(argv, io = {}) {
 
   const credentials = async () => {
     const fromEnv = setting(env, "AGENT_TOKEN");
-    if (fromEnv) return { agent_token: fromEnv, agent_id: null, source: "OPENPATH_AGENT_TOKEN" };
+    if (fromEnv) return { token: fromEnv, agent_id: null, inbox: null, source: "OPENPATH_AGENT_TOKEN" };
     const saved = await loadCredentials(file, api);
     return saved ? { ...saved, source: tilde(file) } : null;
   };
@@ -184,21 +184,17 @@ export async function main(argv, io = {}) {
       const result = await createClient({ base: api, userAgent: agentName, fetch: send }).connect();
       await saveCredentials(file, api, {
         agent_id: result.agent_id,
-        agent_token: result.agent_token,
+        token: result.token,
+        inbox: result.inbox?.address ?? null,
         connected_at: new Date().toISOString(),
       });
-      token = result.agent_token;
+      token = result.token;
       tokenSource = tilde(file);
       client = null;
       const say = primary && !ctx.json ? ctx.out : (/** @type {string} */ line) => write(stderr, line);
       say(c.green(`Connected this agent to Openpath. Agent ${clean(result.agent_id)}.`));
       say(c.dim(`The token is saved in ${tilde(file)}, readable only by you.`));
-      if (result.account_link?.url) {
-        say("");
-        say(`Keep the account: ${clean(result.account_link.url)}`);
-        say(c.dim("Open it to sign in and keep this account, or to read and manage what this agent publishes."));
-        say(c.dim(`It works until ${moment(result.account_link.expires_at)}. Keep the link to yourself.`));
-      }
+      if (result.inbox?.address) say(c.dim(`Its inbox address: ${clean(result.inbox.address)}`));
       return result;
     },
     async forget() {
@@ -209,7 +205,7 @@ export async function main(argv, io = {}) {
       if (!token) {
         const found = await credentials();
         if (found) {
-          token = found.agent_token;
+          token = found.token;
           tokenSource = found.source;
         }
       }
@@ -241,7 +237,7 @@ export async function main(argv, io = {}) {
  *   out: (line?: string) => void, hint: (line: string) => void, warn: (line: string) => void,
  *   printJson: (value: unknown) => void, readStdin: () => Promise<string>,
  *   confirm: (question: string, preferYes: boolean) => Promise<void>,
- *   credentials: () => Promise<{ agent_token: string, agent_id: string | null, source: string } | null>,
+ *   credentials: () => Promise<{ token: string, agent_id: string | null, inbox?: string | null, source: string } | null>,
  *   connect: (options?: { primary?: boolean }) => Promise<any>,
  *   forget: () => Promise<boolean>,
  *   client: (options?: { connect?: boolean, required?: boolean }) => Promise<import("./api.js").Client>,

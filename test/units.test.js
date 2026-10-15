@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { skillName, skillVersion } from "../src/agents.js";
 import { configDir } from "../src/config.js";
 import { detectAgent, olderThan } from "../src/main.js";
-import { clean, summary, verified, wrap } from "../src/output.js";
+import { clean, wrap } from "../src/output.js";
 import { contactIn, inboxHandle, uuidIn } from "../src/refs.js";
 
 const API = "https://api.openpath.sh";
@@ -30,22 +30,6 @@ test("inbox addresses are accepted on Openpath's own site and API only", () => {
     contactIn(`# Plumber\n\nContact: ${WEB}/to/zzzzzzzzzzzz\n\nContact: ${WEB}/to/4k7m9qxr2ht3`, API, WEB),
     "4k7m9qxr2ht3",
   );
-});
-
-test("verification reads the way the website says it", () => {
-  assert.equal(verified({ proofs: [], domains: [] }), "Not verified");
-  assert.equal(verified({ proofs: ["google_account", "phone_number"], domains: [] }), "Verified: Google, phone");
-  assert.equal(verified({ proofs: ["company_domain"], domains: ["acme.com", "acme.org"] }), "Verified acme.com +1");
-});
-
-test("a summary takes the first line as the title", () => {
-  assert.deepEqual(summary("# Plumbing **repairs**\n\nI fix [sinks](https://x.example)."), {
-    title: "Plumbing repairs",
-    preview: "I fix sinks.",
-  });
-  assert.equal(clean("a\x1b[31mb\r\nc"), "a[31mb\nc");
-  assert.deepEqual(wrap("aaaa bbbb cccc", 9), ["aaaa bbbb", "cccc"]);
-  assert.deepEqual(wrap("abcdefghij", 4), ["abcd", "efgh", "ij"]);
 });
 
 test("the agent running the CLI is named from its environment", () => {

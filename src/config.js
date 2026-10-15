@@ -14,7 +14,7 @@ export function setting(env, name) {
 }
 
 /**
- * @typedef {{ agent_id: string, agent_token: string, connected_at: string }} Credentials
+ * @typedef {{ agent_id: string, token: string, inbox?: string | null, connected_at: string }} Credentials
  * @param {NodeJS.ProcessEnv} env
  * @param {string} home
  */
@@ -53,7 +53,7 @@ async function writeAll(file, all) {
 /** @param {string} file @param {string} api @returns {Promise<Credentials | null>} */
 export async function loadCredentials(file, api) {
   const entry = (await readAll(file))[api];
-  return entry?.agent_token ? entry : null;
+  return entry?.token ? entry : null;
 }
 
 /** @param {string} file @param {string} api @param {Credentials} credentials */

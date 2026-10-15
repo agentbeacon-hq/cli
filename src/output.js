@@ -1,22 +1,10 @@
-// How posts, conversations and accounts read in a terminal.
+// How listings, conversations and accounts read in a terminal.
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const PROOFS = /** @type {Record<string, string>} */ ({
-  apple_account: "Apple",
-  facebook_account: "Facebook",
-  github_account: "GitHub",
-  google_account: "Google",
-  linkedin_account: "LinkedIn",
-  payment_card: "card",
-  government_id: "ID",
-  phone_number: "phone",
-  company_domain: "company domain",
-});
-
 /**
- * Posts and messages are written by strangers. Drop every control character
- * but newline and tab, and the invisible direction marks, so a post cannot
+ * Listings and messages are written by strangers. Drop every control character
+ * but newline and tab, and the invisible direction marks, so a listing cannot
  * move the cursor, recolour the screen or reorder what a reader sees.
  */
 export function clean(/** @type {unknown} */ text) {
@@ -41,12 +29,6 @@ export function palette(enabled) {
 
 /** @typedef {ReturnType<typeof palette>} Palette */
 
-/** Cut to `width` characters, counting what a person sees. */
-export function fit(/** @type {string} */ text, /** @type {number} */ width) {
-  const chars = Array.from(text);
-  return chars.length <= width ? text : `${chars.slice(0, Math.max(width - 1, 1)).join("")}…`;
-}
-
 /** `4 Oct 2026` */
 export function day(/** @type {string | null | undefined} */ iso) {
   if (!iso) return "";
@@ -62,66 +44,6 @@ export function moment(/** @type {string | null | undefined} */ iso) {
   if (Number.isNaN(date.getTime())) return clean(iso);
   const time = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
   return `${date.getDate()} ${MONTHS[date.getMonth()]} ${time}`;
-}
-
-/** `2026-03` as `Mar 2026` */
-export function month(/** @type {string | undefined} */ since) {
-  const [year, number] = String(since ?? "").split("-").map(Number);
-  return year && number ? `${MONTHS[number - 1]} ${year}` : clean(since);
-}
-
-/**
- * What Openpath has checked about whoever wrote a post, in the words the
- * website uses: a company domain, the accounts they verified, or nothing.
- * @param {any} integrity
- */
-export function verified(integrity) {
-  if (!integrity) return "Not verified";
-  const domains = (integrity.domains ?? []).map(clean);
-  if (domains.length) return `Verified ${domains[0]}${domains.length > 1 ? ` +${domains.length - 1}` : ""}`;
-  const proofs = (integrity.proofs ?? []).filter((/** @type {string} */ p) => p !== "company_domain");
-  if (proofs.length) return `Verified: ${proofs.map((/** @type {string} */ p) => PROOFS[p] ?? clean(p)).join(", ")}`;
-  return "Not verified";
-}
-
-/** @param {any} integrity @param {Palette} c */
-export function trust(integrity, c) {
-  const label = verified(integrity);
-  return label === "Not verified" ? c.yellow(label) : c.green(label);
-}
-
-/** Every fact about an author, one a line, for a post read in full. @param {any} integrity */
-export function aboutAuthor(integrity) {
-  if (!integrity) return [];
-  const lines = [];
-  for (const domain of integrity.domains ?? []) lines.push(`Controls ${clean(domain)}, a company domain`);
-  for (const proof of integrity.proofs ?? []) {
-    if (proof === "company_domain" && integrity.domains?.length) continue;
-    lines.push(`Verified ${PROOFS[proof] ?? clean(proof)}`);
-  }
-  if (!lines.length) lines.push("Has not verified an account, phone, card, ID or domain");
-  if (integrity.since) lines.push(`On Openpath since ${month(integrity.since)}`);
-  if (typeof integrity.posts === "number") lines.push(`${integrity.posts} live ${integrity.posts === 1 ? "post" : "posts"}`);
-  return lines;
-}
-
-/** The first line of a post as its title, and the next few as a preview. @param {string} content */
-export function summary(content) {
-  const lines = clean(content)
-    .split("\n")
-    .map((line) =>
-      line
-        .trim()
-        .replace(/^#{1,6}\s+/, "")
-        .replace(/^>\s?/, "")
-        .replace(/^[-*+]\s+/, "")
-        .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-        .replace(/[*_`]+/g, "")
-        .replace(/\s+/g, " ")
-        .trim(),
-    )
-    .filter(Boolean);
-  return { title: lines[0] ?? "(empty post)", preview: lines.slice(1).join(" ") };
 }
 
 /** A text block set off with a rule, wrapped to `width`, so it reads as quoted. @param {string} text @param {Palette} c @param {number} width */
