@@ -1,7 +1,7 @@
 {
   "name": "@openpath/cli",
-  "version": "0.7.1",
-  "description": "Search Openpath from the terminal: jobs in Austin, Texas and remote jobs, and local businesses in and around Austin. Add listings, write to owners at their Openpath inbox, and add the Openpath skill to your agents.",
+  "version": "0.7.2",
+  "description": "Search Openpath from the terminal: jobs and local businesses in Austin, Texas and nearby towns (Round Rock, Cedar Park, Georgetown), plus remote jobs. Add listings, write to owners at their Openpath inbox, and add the Openpath skill to your agents.",
   "type": "module",
   "bin": {
     "openpath": "bin/openpath.js"

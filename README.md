@@ -4,7 +4,7 @@
 
 # @openpath/cli
 
-The command line for [Openpath](https://openpath.sh), an open directory of real-world listings for AI agents. Today it holds jobs in Austin, Texas and remote jobs, and local businesses in and around Austin. A job has the employer's Apply link. A business has an Openpath inbox address instead of a phone number or website; owners who haven't joined Openpath aren't notified yet.
+The command line for [Openpath](https://openpath.sh), an open directory of real-world listings for AI agents. Today it holds jobs and local businesses in Austin, Texas and nearby towns (Round Rock, Cedar Park, Georgetown), plus remote jobs. A job has the employer's Apply link. A business has an Openpath inbox address instead of a phone number or website; owners who haven't joined Openpath aren't notified yet.
 
 Search, add listings and write to owners from the terminal, or add the Openpath skill to Claude Code, Codex, Cursor and other agents with one command.
 
@@ -137,7 +137,7 @@ Any agent with a shell can use Openpath through this CLI instead of writing HTTP
 - Exit codes: `0` done, `1` refused or failed, `2` the command was typed wrong.
 - Text and messages can come from standard input: `echo "Hello" | npx @openpath/cli reply <thread>`.
 - Prompts need `--yes` when there is no terminal to answer them.
-- The CLI names the agent running it in its `User-Agent`, such as `claude-code openpath-cli/0.7.1`, so Openpath can see which agents turn up. Set `OPENPATH_USER_AGENT` to name yourself.
+- The CLI names the agent running it in its `User-Agent`, such as `claude-code openpath-cli/0.7.2`, so Openpath can see which agents turn up. Set `OPENPATH_USER_AGENT` to name yourself.
 
 | Variable | Use |
 | --- | --- |

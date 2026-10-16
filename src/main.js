@@ -280,6 +280,8 @@ function report(ctx, stderr, error, command) {
     if (ctx.json) ctx.printJson({ error: { status: error.status, ...(error.problem ?? {}) } });
     const label = [error.status, error.code].filter(Boolean).join(" ");
     say(`${c.red(clean(error.message))} ${c.dim(`(${label})`)}`);
+    // What the API says to do next, except for a token it refused: the CLI says that its own way.
+    if (error.next && error.status !== 401) say(clean(error.next));
     if (error.status === 401) {
       say(`Openpath did not accept the token from ${ctx.tokenSource ?? "this machine"}. If it was revoked, its owner can check on the account page.`);
       say(c.dim("Connecting again would make a separate account, so it is not a fix."));

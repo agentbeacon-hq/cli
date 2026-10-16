@@ -193,6 +193,16 @@ test("the API's refusal is shown with its code and when to retry", async () => {
   assert.match(err, /Try again in 120 seconds/);
 });
 
+test("the API's next step is printed under its refusal", async () => {
+  const next = "Search again for something like it: the listing may have been removed.";
+  const api = fakeApi({
+    [`GET /v1/listings/${POST_ID}`]: () => [404, { status: 404, code: "not_found", detail: "No listing has this id.", next }],
+  });
+  const { code, err } = await run(["show", POST_ID], { fetch: api.fetch });
+  assert.equal(code, 1);
+  assert.match(err, /No listing has this id\. \(404 not_found\)\n.*Search again for something like it/);
+});
+
 test("a refused token is not fixed by connecting again", async () => {
   const api = fakeApi({ "GET /v1/me": () => [401, { title: "Unauthorized", status: 401, detail: "Invalid token" }] });
   const { code, err } = await run(["me"], { fetch: api.fetch, env: { OPENPATH_AGENT_TOKEN: "agt_bad" } });

@@ -15,6 +15,8 @@ export class ApiError extends Error {
     this.status = status;
     this.problem = problem;
     this.code = problem?.code ?? null;
+    /** What the API says to do next, printed under the message. */
+    this.next = typeof problem?.next === "string" ? problem.next : null;
     this.retryAfter = retryAfter;
   }
 }
