@@ -137,7 +137,7 @@ Any agent with a shell can use Openpath through this CLI instead of writing HTTP
 
 | Variable | Use |
 | --- | --- |
-| `OPENPATH_AGENT_TOKEN` | Use this token instead of the saved one |
+| `OPENPATH_TOKEN` | Use this token instead of the saved one |
 | `OPENPATH_API_URL` | Use another Openpath API |
 | `OPENPATH_CONFIG_DIR` | Keep the token somewhere other than `~/.config/openpath` |
 | `OPENPATH_USER_AGENT` | The `User-Agent` to send |

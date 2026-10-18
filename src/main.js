@@ -128,8 +128,8 @@ export async function main(argv, io = {}) {
   const tilde = (/** @type {string} */ path) => (path === home || path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path);
 
   const credentials = async () => {
-    const fromEnv = setting(env, "AGENT_TOKEN");
-    if (fromEnv) return { token: fromEnv, agent_id: null, line: null, source: "OPENPATH_AGENT_TOKEN" };
+    const fromEnv = setting(env, "TOKEN");
+    if (fromEnv) return { token: fromEnv, agent_id: null, line: null, source: "OPENPATH_TOKEN" };
     const saved = await loadCredentials(file, api);
     return saved ? { ...saved, source: tilde(file) } : null;
   };

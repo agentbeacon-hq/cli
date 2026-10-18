@@ -10,7 +10,7 @@ const connected = {
     { agent_id: "a1b2c3d4-0000-4000-8000-000000000001", token: "agt_test", line: { handle: HANDLE, address: `https://openpath.sh/to/${HANDLE}` } },
   ],
 };
-const env = { OPENPATH_AGENT_TOKEN: "agt_env" };
+const env = { OPENPATH_TOKEN: "agt_env" };
 const PAGE = `# Beacons for "plumber free tomorrow"\n\nRead as: near Austin, TX 78704. 1 beacon.\n\n${beaconMarkdown()}`;
 
 test("find needs no connection, sends no category or side, and shows the Markdown as it reads", async () => {
@@ -188,9 +188,9 @@ test("line opens and closes, and a takeover is started and confirmed", async () 
 
 test("a refused token is not fixed by connecting again", async () => {
   const api = fakeApi({ "GET /v1/me": () => [401, { title: "Unauthorized", status: 401, detail: "Invalid token" }] });
-  const { code, err } = await run(["me"], { fetch: api.fetch, env: { OPENPATH_AGENT_TOKEN: "agt_bad" } });
+  const { code, err } = await run(["me"], { fetch: api.fetch, env: { OPENPATH_TOKEN: "agt_bad" } });
   assert.equal(code, 1);
-  assert.match(err, /OPENPATH_AGENT_TOKEN/);
+  assert.match(err, /OPENPATH_TOKEN/);
   assert.match(err, /separate account/);
 });
 
