@@ -15,6 +15,15 @@ const MAX_BEACON = 600;
 const MAX_MESSAGE = 2000;
 const OFF_REASONS = ["taken", "filled", "done", "withdrawn"];
 const OUTCOMES = ["accepted", "booked", "hired", "declined", "spam"];
+const HOLDERS = ["business", "person"];
+const asOption = {
+  as: { type: /** @type {const} */ ("string"), hint: "who", help: "Who this agent acts for: business or person" },
+};
+
+/** @param {string | undefined} value */
+function holderOf(value) {
+  return value === undefined ? undefined : /** @type {import("./api.js").Holder} */ (oneOf(value, HOLDERS, "holder with --as"));
+}
 
 /** @typedef {import("./main.js").Context} Context */
 /** @typedef {Record<string, any>} Options */
@@ -426,17 +435,22 @@ export const commands = {
     summary: "Connect this agent to Openpath and save its token",
     about: [
       "One call, no account. The CLI also connects by itself the first time you turn on or answer a beacon.",
+      "Say who it acts for with --as business or --as person. A person turns beacons on only once",
+      "an 18+ account is linked (openpath link); a business that takes over its beacon counts as one anyway.",
     ],
-    async run(ctx) {
+    options: { ...asOption },
+    async run(ctx, _args, opts) {
+      const holder = holderOf(opts.as);
       const existing = await ctx.credentials();
       if (existing) {
         if (ctx.json) return ctx.printJson({ agent_id: existing.agent_id ?? null, source: existing.source });
         ctx.out(`Already connected${existing.agent_id ? ` as agent ${existing.agent_id}` : ""}. The token is in ${existing.source}.`);
+        if (holder) ctx.hint(`It has connected already, so say it when linking: openpath link --as ${holder}`);
         ctx.hint("See this agent with: openpath me");
         return;
       }
-      const result = await ctx.connect({ primary: true });
-      if (ctx.json) return ctx.printJson({ agent_id: result.agent_id, line: result.line?.address ?? null });
+      const result = await ctx.connect({ primary: true, holder });
+      if (ctx.json) return ctx.printJson({ agent_id: result.agent_id, holder: result.holder ?? null, line: result.line?.address ?? null });
     },
   },
 
@@ -452,6 +466,7 @@ export const commands = {
       const { c } = ctx;
       const row = (/** @type {string} */ label, /** @type {string} */ value) => ctx.out(`${c.bold(label.padEnd(8))}  ${value}`);
       row("Agent", clean(me.agent_id));
+      row("Acts for", me.holder ? `a ${clean(me.holder)}` : c.dim("not said (openpath link --as business|person)"));
       row("Line", saved?.line ? clean(saved.line) : c.dim("not saved on this machine"));
       row("Account", me.linked_to_account ? "linked to a person's Openpath account" : c.dim("not linked (openpath link)"));
       row("Token", ctx.tokenSource ?? "");
@@ -463,8 +478,9 @@ export const commands = {
     usage: "link",
     summary: "Get a one-time link that lets you see and manage what this agent does",
     about: ["Open it yourself and keep it to yourself: you sign in on openpath.sh and confirm you are 18 or older."],
-    async run(ctx) {
-      const result = await (await ctx.client({ required: true })).link();
+    options: { ...asOption },
+    async run(ctx, _args, opts) {
+      const result = await (await ctx.client({ required: true })).link(holderOf(opts.as));
       if (ctx.json) return ctx.printJson(result);
       ctx.out(clean(result.url));
       ctx.hint(`It works until ${moment(result.expires_at)}. Keep it to yourself.`);

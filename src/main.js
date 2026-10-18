@@ -177,8 +177,8 @@ export async function main(argv, io = {}) {
       if (!yes) throw new Cancelled("Nothing changed.");
     },
     credentials,
-    async connect({ primary = false } = {}) {
-      const result = await createClient({ base: api, userAgent: agentName, fetch: send }).connect();
+    async connect({ primary = false, holder } = {}) {
+      const result = await createClient({ base: api, userAgent: agentName, fetch: send }).connect(holder);
       await saveCredentials(file, api, {
         agent_id: result.agent_id,
         token: result.token,
@@ -235,7 +235,7 @@ export async function main(argv, io = {}) {
  *   printJson: (value: unknown) => void, readStdin: () => Promise<string>,
  *   confirm: (question: string, preferYes: boolean) => Promise<void>,
  *   credentials: () => Promise<{ token: string, agent_id: string | null, line?: string | null, source: string } | null>,
- *   connect: (options?: { primary?: boolean }) => Promise<any>,
+ *   connect: (options?: { primary?: boolean, holder?: import("./api.js").Holder }) => Promise<any>,
  *   forget: () => Promise<boolean>,
  *   client: (options?: { connect?: boolean, required?: boolean }) => Promise<import("./api.js").Client>,
  * }} Context

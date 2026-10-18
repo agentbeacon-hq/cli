@@ -194,6 +194,29 @@ test("a refused token is not fixed by connecting again", async () => {
   assert.match(err, /separate account/);
 });
 
+test("connect and link say who the agent acts for only when told, and me shows it", async () => {
+  const api = fakeApi({
+    ...connected,
+    "POST /v1/me/link": () => [201, { url: "https://openpath.sh/link/abc", expires_at: "2026-10-18T10:00:00Z" }],
+    "GET /v1/me": () => [200, { agent_id: "a1", linked_to_account: false, holder: "business" }],
+  });
+  const first = await run(["connect", "--as", "business"], { fetch: api.fetch });
+  assert.equal(first.code, 0, first.err);
+  assert.deepEqual(api.requests[0].body, { holder: "business" });
+  const again = await run(["connect", "--as", "person"], { fetch: api.fetch, home: first.home });
+  assert.match(again.out, /openpath link --as person/);
+  assert.equal(api.requests.length, 1);
+  await run(["link", "--as", "person"], { fetch: api.fetch, env });
+  assert.deepEqual(api.requests.at(-1)?.body, { holder: "person" });
+  await run(["link"], { fetch: api.fetch, env });
+  assert.deepEqual(api.requests.at(-1)?.body, {});
+  const me = await run(["me"], { fetch: api.fetch, env });
+  assert.match(me.out, /Acts for\s+a business/);
+  const wrong = await run(["connect", "--as", "company"], { fetch: api.fetch });
+  assert.equal(wrong.code, 2);
+  assert.match(wrong.err, /business, person/);
+});
+
 test("connect does not make a second account when one is saved", async () => {
   const api = fakeApi(connected);
   const first = await run(["connect"], { fetch: api.fetch });

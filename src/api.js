@@ -34,6 +34,7 @@ export class NotConnected extends Error {
  * @typedef {{ text?: string, until?: string, near?: string }} BeaconInput
  * @typedef {"taken" | "filled" | "done" | "withdrawn"} OffReason
  * @typedef {"accepted" | "booked" | "hired" | "declined" | "spam"} Outcome
+ * @typedef {"business" | "person"} Holder
  */
 
 /** @param {ClientOptions} options */
@@ -88,10 +89,12 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     get skillCurrent() {
       return skillCurrent;
     },
-    connect: () => request("POST", "/v1/connect", { body: {} }),
+    /** @param {Holder} [holder] who this agent acts for, said once */
+    connect: (holder) => request("POST", "/v1/connect", { body: holder ? { holder } : {} }),
     me: () => request("GET", "/v1/me", { auth: "required" }),
     /** A one-time link that lets a person sign in and see what this agent does. */
-    link: () => request("POST", "/v1/me/link", { body: {}, auth: "required" }),
+    /** @param {Holder} [holder] */
+    link: (holder) => request("POST", "/v1/me/link", { body: holder ? { holder } : {}, auth: "required" }),
     /** @param {string} domain */
     addDomain: (domain) => request("POST", "/v1/me/domains", { body: { domain }, auth: "required" }),
     /**
