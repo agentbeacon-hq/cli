@@ -205,17 +205,20 @@ export const commands = {
       const { c } = ctx;
       ctx.out();
       for (const beacon of beacons) {
+        // What others read is the shown revision; the latest may still wait for, or have failed, its safety check.
+        const newer = beacon.latest_revision !== beacon.shown_revision;
         const state =
           beacon.state !== "on"
             ? c.dim(`off${beacon.off_reason ? `: ${clean(beacon.off_reason)}` : ""}`)
-            : beacon.latest_safety === "blocked"
-              ? c.yellow("on, its latest words refused")
-              : beacon.latest_revision > beacon.revision
-                ? c.dim("on, its latest words wait for their safety check")
-                : c.green("on");
+            : !newer
+              ? c.green("on")
+              : beacon.latest_safety === "blocked"
+                ? c.yellow(`latest words refused${beacon.latest_safety_reason ? `: ${clean(beacon.latest_safety_reason)}` : ""}`)
+                : c.dim("latest words wait for their safety check");
+        const shown = beacon.shown_revision === null ? c.dim(" · nobody can find it yet") : "";
         const waiting = beacon.answers_waiting ? c.blue(` · ${beacon.answers_waiting} waiting ${beacon.answers_waiting === 1 ? "answer" : "answers"}`) : "";
-        for (const line of quoted(beacon.text, c, ctx.width)) ctx.out(line);
-        ctx.out(`  ${state}${waiting}${c.dim(` · revision ${beacon.latest_revision} · until ${day(beacon.until)}`)}`);
+        for (const line of quoted(beacon.latest_text, c, ctx.width)) ctx.out(line);
+        ctx.out(`  ${state}${shown}${waiting}${c.dim(` · revision ${beacon.latest_revision} · until ${day(beacon.until)}`)}`);
         ctx.out(`  ${c.dim(clean(beacon.id))}`);
         ctx.out();
       }

@@ -79,13 +79,14 @@ test("on refuses an empty or too-long beacon and a bad --until before anything i
 
 test("beacons shows each one's state, and update sends the latest revision", async () => {
   const api = fakeApi({
-    "GET /v1/me/beacons": () => [200, { beacons: [ownBeacon({ answers_waiting: 2 }), ownBeacon({ id: ANSWER_ID, state: "off", off_reason: "taken" })] }],
+    "GET /v1/me/beacons": () => [200, { beacons: [ownBeacon({ answers_waiting: 2 }), ownBeacon({ id: ANSWER_ID, state: "off", off_reason: "taken" }), ownBeacon({ id: "11111111-1111-4111-8111-111111111111", shown_revision: null, text: null, latest_revision: 1, latest_text: "Couch to give away", latest_safety: "blocked", latest_safety_reason: "spam" })] }],
     [`PUT /v1/beacons/${BEACON_ID}`]: () => [200, { beacon: ownBeacon(), revision: 4, safety: "pending" }],
   });
   const listed = await run(["beacons"], { fetch: api.fetch, env });
   assert.match(listed.out, /│ Free tomorrow 9–12/);
   assert.match(listed.out, /on · 2 waiting answers · revision 3/);
   assert.match(listed.out, /off: taken/);
+  assert.match(listed.out, /│ Couch to give away\n  latest words refused: spam · nobody can find it yet/);
   const { code, out } = await run(["update", BEACON_ID, "Free", "tomorrow", "10–12", "only"], { fetch: api.fetch, env });
   assert.equal(code, 0);
   assert.deepEqual(api.requests.at(-1)?.body, { text: "Free tomorrow 10–12 only", revision: 3 });
