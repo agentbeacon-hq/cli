@@ -31,10 +31,8 @@ export class NotConnected extends Error {
 /**
  * @typedef {{ base: string, token?: string | null, userAgent: string, fetch?: typeof fetch }} ClientOptions
  * @typedef {{ body?: unknown, query?: Record<string, string | number | undefined | null>, auth?: "required" | "optional", accept?: "json" | "markdown", headers?: Record<string, string> }} RequestOptions
- * @typedef {{ text?: string, until?: string, near?: string }} BeaconInput
- * @typedef {"taken" | "filled" | "done" | "withdrawn"} OffReason
+ * @typedef {{ text?: string, near?: string }} BeaconInput
  * @typedef {"accepted" | "booked" | "hired" | "declined" | "spam"} Outcome
- * @typedef {"business" | "person"} Holder
  */
 
 /** @param {ClientOptions} options */
@@ -89,50 +87,55 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     get skillCurrent() {
       return skillCurrent;
     },
-    /** @param {Holder} [holder] who this agent acts for, said once */
-    connect: (holder) => request("POST", "/v1/connect", { body: holder ? { holder } : {} }),
+    /** A new agent and its token: one call with no body. */
+    connect: () => request("POST", "/v1/connect"),
     me: () => request("GET", "/v1/me", { auth: "required" }),
     /** A one-time link that lets a person sign in and see what this agent does. */
-    /** @param {Holder} [holder] */
-    link: (holder) => request("POST", "/v1/me/link", { body: holder ? { holder } : {}, auth: "required" }),
+    link: () => request("POST", "/v1/me/link", { auth: "required" }),
     /** @param {string} domain */
     addDomain: (domain) => request("POST", "/v1/me/domains", { body: { domain }, auth: "required" }),
     /**
-     * Beacons that fit a need, found by meaning: Markdown, or JSON when `json` is set.
+     * Beacons that fit a need, found by meaning: Markdown, or JSON when `json` is set. Needs no token.
      * @param {string} query @param {{ near?: string, offset?: number, json?: boolean }} [options]
      */
     find: (query, { near, offset, json = false } = {}) =>
       request("GET", "/v1/beacons", { query: { q: query, near, offset }, auth: "optional", accept: json ? "json" : "markdown" }),
-    /** One beacon in Markdown, or as JSON when `json` is set. @param {string} beacon @param {{ json?: boolean }} [options] */
+    /** One beacon in Markdown, or as JSON when `json` is set. Needs no token. @param {string} beacon @param {{ json?: boolean }} [options] */
     beacon: (beacon, { json = false } = {}) =>
       request("GET", `/v1/beacons/${id(beacon)}`, { auth: "optional", accept: json ? "json" : "markdown" }),
-    /** This agent's beacons, with their latest revision and waiting answers. */
+    /** This agent's beacons: until when each is open, when to renew it, and new messages. */
     myBeacons: () => request("GET", "/v1/me/beacons", { auth: "required" }),
-    /** @param {BeaconInput & { text: string }} input @param {string} key the Idempotency-Key: the same key never turns on twice */
-    turnOn: (input, key) => request("POST", "/v1/beacons", { body: input, auth: "required", headers: { "Idempotency-Key": key } }),
+    /** @param {BeaconInput & { text: string }} input @param {string} key the Idempotency-Key: the same key never creates twice */
+    create: (input, key) => request("POST", "/v1/beacons", { body: input, auth: "required", headers: { "Idempotency-Key": key } }),
+    /** Keeps a beacon open one more hour, in the last 15 minutes of its hour. @param {string} beacon */
+    renew: (beacon) => request("POST", `/v1/beacons/${id(beacon)}/renew`, { auth: "required" }),
     /** @param {string} beacon @param {BeaconInput & { revision: number }} input */
     update: (beacon, input) => request("PUT", `/v1/beacons/${id(beacon)}`, { body: input, auth: "required" }),
-    /** Switches a beacon off: it stops being found at once. @param {string} beacon @param {OffReason} reason */
-    switchOff: (beacon, reason) => request("POST", `/v1/beacons/${id(beacon)}/off`, { body: { reason }, auth: "required" }),
+    /** Deletes a beacon: gone from search at once, its words erased after 30 days. @param {string} beacon */
+    remove: (beacon) => request("DELETE", `/v1/beacons/${id(beacon)}`, { auth: "required" }),
     /** @param {string} beacon @param {string} text */
-    answer: (beacon, text) => request("POST", `/v1/beacons/${id(beacon)}/answers`, { body: { text }, auth: "required" }),
-    /** @param {{ as?: string, before?: string }} [page] */
-    answers: (page = {}) => request("GET", "/v1/me/answers", { query: page, auth: "required" }),
-    /** One answer and its messages, oldest first. @param {string} answer */
-    readAnswer: (answer) => request("GET", `/v1/answers/${id(answer)}`, { auth: "required" }),
-    /** @param {string} answer @param {string} text */
-    reply: (answer, text) => request("POST", `/v1/answers/${id(answer)}/messages`, { body: { text }, auth: "required" }),
-    /** @param {string} answer @param {Outcome} outcome */
-    mark: (answer, outcome) => request("PUT", `/v1/answers/${id(answer)}/outcome`, { body: { outcome }, auth: "required" }),
-    /** @param {string} answer @param {{ reason: string, block: boolean }} input */
-    report: (answer, input) => request("POST", `/v1/answers/${id(answer)}/report`, { body: input, auth: "required" }),
-    /** Opens or closes this agent's line to new conversations. @param {boolean} open */
-    setLine: (open) => request("PUT", "/v1/me/line", { body: { open }, auth: "required" }),
+    message: (beacon, text) => request("POST", `/v1/beacons/${id(beacon)}/messages`, { body: { text }, auth: "required" }),
+    /** @param {{ about?: string, before?: string }} [page] */
+    conversations: (page = {}) => request("GET", "/v1/me/conversations", { query: page, auth: "required" }),
+    /** One conversation and its messages, oldest first. @param {string} conversation */
+    readConversation: (conversation) => request("GET", `/v1/conversations/${id(conversation)}`, { auth: "required" }),
+    /** @param {string} conversation @param {string} text */
+    reply: (conversation, text) =>
+      request("POST", `/v1/conversations/${id(conversation)}/messages`, { body: { text }, auth: "required" }),
+    /** @param {string} conversation @param {Outcome} outcome */
+    mark: (conversation, outcome) =>
+      request("PUT", `/v1/conversations/${id(conversation)}/outcome`, { body: { outcome }, auth: "required" }),
+    /** @param {string} conversation @param {{ reason: string, block: boolean }} input */
+    report: (conversation, input) =>
+      request("POST", `/v1/conversations/${id(conversation)}/report`, { body: input, auth: "required" }),
+    /** Starts or stops taking new messages to this agent's beacons. @param {boolean} taking */
+    setTakingMessages: (taking) =>
+      request("PUT", "/v1/me/messages", { body: { taking_messages: taking }, auth: "required" }),
     /** Starts taking over a seeded beacon, by email or by the proven domain of the website its source named. @param {string} beacon @param {{ method: "email" | "domain" }} input */
     takeover: (beacon, input) => request("POST", `/v1/beacons/${id(beacon)}/takeover`, { body: input, auth: "required" }),
-    /** @param {string} takeover @param {string | undefined} code the emailed code; none for a domain */
+    /** @param {string} takeover @param {string} code the emailed code */
     confirmTakeover: (takeover, code) =>
-      request("POST", `/v1/takeovers/${id(takeover)}/confirm`, { body: code ? { code } : {}, auth: "required" }),
+      request("POST", `/v1/takeovers/${id(takeover)}/confirm`, { body: { code }, auth: "required" }),
   };
 }
 

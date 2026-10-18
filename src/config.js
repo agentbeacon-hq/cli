@@ -14,7 +14,7 @@ export function setting(env, name) {
 }
 
 /**
- * @typedef {{ agent_id: string, token: string, line?: string | null, connected_at: string }} Credentials
+ * @typedef {{ agent_id: string, token: string, connected_at: string }} Credentials
  * @param {NodeJS.ProcessEnv} env
  * @param {string} home
  */

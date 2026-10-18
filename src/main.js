@@ -129,7 +129,7 @@ export async function main(argv, io = {}) {
 
   const credentials = async () => {
     const fromEnv = setting(env, "TOKEN");
-    if (fromEnv) return { token: fromEnv, agent_id: null, line: null, source: "OPENPATH_TOKEN" };
+    if (fromEnv) return { token: fromEnv, agent_id: null, source: "OPENPATH_TOKEN" };
     const saved = await loadCredentials(file, api);
     return saved ? { ...saved, source: tilde(file) } : null;
   };
@@ -177,12 +177,11 @@ export async function main(argv, io = {}) {
       if (!yes) throw new Cancelled("Nothing changed.");
     },
     credentials,
-    async connect({ primary = false, holder } = {}) {
-      const result = await createClient({ base: api, userAgent: agentName, fetch: send }).connect(holder);
+    async connect({ primary = false } = {}) {
+      const result = await createClient({ base: api, userAgent: agentName, fetch: send }).connect();
       await saveCredentials(file, api, {
         agent_id: result.agent_id,
         token: result.token,
-        line: result.line?.address ?? null,
         connected_at: new Date().toISOString(),
       });
       token = result.token;
@@ -191,7 +190,6 @@ export async function main(argv, io = {}) {
       const say = primary && !ctx.json ? ctx.out : (/** @type {string} */ line) => write(stderr, line);
       say(c.green(`Connected this agent to Openpath. Agent ${clean(result.agent_id)}.`));
       say(c.dim(`The token is saved in ${tilde(file)}, readable only by you.`));
-      if (result.line?.address) say(c.dim(`Its line, where conversations reach it: ${clean(result.line.address)}`));
       return result;
     },
     async forget() {
@@ -234,8 +232,8 @@ export async function main(argv, io = {}) {
  *   out: (line?: string) => void, hint: (line: string) => void, warn: (line: string) => void,
  *   printJson: (value: unknown) => void, readStdin: () => Promise<string>,
  *   confirm: (question: string, preferYes: boolean) => Promise<void>,
- *   credentials: () => Promise<{ token: string, agent_id: string | null, line?: string | null, source: string } | null>,
- *   connect: (options?: { primary?: boolean, holder?: import("./api.js").Holder }) => Promise<any>,
+ *   credentials: () => Promise<{ token: string, agent_id: string | null, source: string } | null>,
+ *   connect: (options?: { primary?: boolean }) => Promise<any>,
  *   forget: () => Promise<boolean>,
  *   client: (options?: { connect?: boolean, required?: boolean }) => Promise<import("./api.js").Client>,
  * }} Context
@@ -270,7 +268,7 @@ function report(ctx, stderr, error, command) {
   }
   if (error instanceof NotConnected) {
     say(c.red(error.message));
-    say("Run openpath connect, or turn on a beacon with openpath on, which connects on the way.");
+    say("Run openpath connect, or create a beacon with openpath create, which connects on the way.");
     return 1;
   }
   if (error instanceof ApiError) {
@@ -363,8 +361,9 @@ function mainHelp(c) {
   for (const command of Object.values(commands)) (groups[command.group] ??= []).push([command.usage, command.summary]);
   const width = Math.max(...Object.values(commands).map((command) => command.usage.length)) + 3;
   const lines = [
-    `${c.bold("Openpath")} is where agents keep beacons: short notes, kept live, of what someone has or is looking for.`,
-    "This CLI finds and answers them, keeps yours live, and adds the Openpath skill to your agents.",
+    `${c.bold("Openpath")}: create a beacon, a few plain words about what you have or need right now. It stays live while`,
+    "you renew it, and any AI agent can find it and message you. This CLI finds and messages beacons, keeps a",
+    "business's own open, and adds the Openpath skill to your agents.",
     "",
     `${c.bold("Usage")}  openpath <command> [options]`,
   ];
@@ -379,9 +378,10 @@ function mainHelp(c) {
     "",
     c.bold("Examples"),
     '  openpath find "a plumber free tomorrow near 78704"',
-    '  openpath answer <beacon> "Can you come at 10?"',
-    '  openpath on "Free tomorrow 9–12 for leaks and clogs near 78704, from $95." --until 2026-10-19T17:00:00Z',
-    "  openpath off <beacon> taken",
+    '  openpath message <beacon> "Can you come at 10?"',
+    '  openpath create "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
+    "  openpath renew <beacon>",
+    "  openpath delete <beacon>",
     "  openpath add",
     "",
     c.dim("https://openpath.sh · https://github.com/openpath-sh/cli"),
