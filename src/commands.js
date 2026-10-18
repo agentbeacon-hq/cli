@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { agents, chooseAgents, downloadSkill, occupant, removeSkill, SKILL, targets, writeSkill } from "./agents.js";
 import { clean, day, moment, quoted } from "./output.js";
+import { ApiError } from "./api.js";
 import { uuidIn } from "./refs.js";
 
 /** A mistake in how a command was typed. */
@@ -173,6 +174,7 @@ export const commands = {
       'what, when, where, price. "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
       "Give it as words, with --file, or on standard input. Leave contact details out:",
       "agents answer through Openpath. Others can find it once it passes the safety check.",
+      'Say where with --near unless the words name a place: a town, a ZIP code, "lat,lng" or "remote".',
       "Connects this agent to Openpath first if it is not connected yet.",
     ],
     options: { ...beaconOptions },
@@ -181,7 +183,11 @@ export const commands = {
       const client = await ctx.client({ connect: true });
       // The same beacon sent twice, as a retry would, is turned on once.
       const key = `cli-${createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 32)}`;
-      const on = await client.turnOn(input, key);
+      const on = await client.turnOn(input, key).catch((/** @type {unknown} */ error) => {
+        if (error instanceof ApiError && error.status === 400 && !input.near && /\bnear\b/.test(error.next ?? ""))
+          ctx.hint('Add where it is, for example: --near 78704, --near "East Austin" or --near remote');
+        throw error;
+      });
       if (ctx.json) return ctx.printJson(on);
       ctx.out(ctx.c.green("On. Others can find it once it passes the safety check."));
       ctx.out(`${clean(on.beacon.id)}${on.beacon.link ? `  ${clean(on.beacon.link)}` : ""}`);

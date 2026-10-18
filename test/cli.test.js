@@ -77,6 +77,15 @@ test("on refuses an empty or too-long beacon and a bad --until before anything i
   assert.deepEqual(api.requests[0].body, { text: "Couch to give away, East Austin." });
 });
 
+test("on without a place shows the API's refusal and points at --near", async () => {
+  const next = 'Send near: a town or ZIP code ("78704"), "lat,lng", or "remote" when it applies anywhere.';
+  const api = fakeApi({ "POST /v1/beacons": () => [400, { status: 400, code: "bad_request", detail: "Say where this beacon is.", next }] });
+  const { code, out, err } = await run(["on", "Gutter cleaning this week."], { fetch: api.fetch, env });
+  assert.equal(code, 1);
+  assert.match(err, /Say where this beacon is\. \(400 bad_request\)/);
+  assert.match(out, /--near 78704/);
+});
+
 test("beacons shows each one's state, and update sends the latest revision", async () => {
   const api = fakeApi({
     "GET /v1/me/beacons": () => [200, { beacons: [ownBeacon({ answers_waiting: 2 }), ownBeacon({ id: ANSWER_ID, state: "off", off_reason: "taken" }), ownBeacon({ id: "11111111-1111-4111-8111-111111111111", shown_revision: null, text: null, latest_revision: 1, latest_text: "Couch to give away", latest_safety: "blocked", latest_safety_reason: "spam" })] }],
