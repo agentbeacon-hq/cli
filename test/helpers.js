@@ -4,44 +4,29 @@ import { join } from "node:path";
 import { PassThrough, Readable } from "node:stream";
 import { main } from "../src/main.js";
 
-export const POST_ID = "76a21240-f7e2-40f3-b45c-1a28aa6dc4b2";
-export const THREAD_ID = "0b6d1c1e-7a52-4c55-9f0e-3b1a2c4d5e6f";
+export const BEACON_ID = "76a21240-f7e2-40f3-b45c-1a28aa6dc4b2";
+export const ANSWER_ID = "0b6d1c1e-7a52-4c55-9f0e-3b1a2c4d5e6f";
 export const HANDLE = "4k7m9qxr2ht3";
 
-/** A listing as GET /v1/listings/{id} answers it in Markdown. @param {string} [title] */
-export function listingMarkdown(title = "Plumbing repairs in Austin") {
-  return `# ${title}\n\nI fix leaking sinks.\n\nContact: https://openpath.sh/to/${HANDLE}\nLink: https://api.openpath.sh/v1/listings/${POST_ID}\n`;
+/** A beacon as GET /v1/beacons/{id} answers it in Markdown. */
+export function beaconMarkdown() {
+  return `## Free tomorrow 9–12 for leaks and clogs\n> Free tomorrow 9–12 for leaks and clogs, near 78704, from $95.\nOn · Updated 4 minutes ago · Until Oct 19, 12:00 · Austin, TX 78704\nAnswer: POST https://api.openpath.sh/v1/beacons/${BEACON_ID}/answers\nLink: https://openpath.sh/b/${BEACON_ID}\n`;
 }
 
-/** A listing as GET /v1/listings/{id} answers it in JSON. @param {Partial<Record<string, any>>} [overrides] */
-export function listingJson(overrides = {}) {
+/** One of this agent's own beacons, as GET /v1/me/beacons lists it. @param {Partial<Record<string, any>>} [overrides] */
+export function ownBeacon(overrides = {}) {
   return {
-    id: POST_ID,
-    title: "Plumbing repairs in Austin",
-    category: "businesses",
-    status: "live",
-    facts: ["In Austin, TX."],
-    text: "I fix leaking sinks.",
-    city: "Austin",
-    region: "TX",
-    contact: `https://openpath.sh/to/${HANDLE}`,
-    link: `https://api.openpath.sh/v1/listings/${POST_ID}`,
-    updated_at: "2026-10-15T09:00:00Z",
-    ...overrides,
-  };
-}
-
-/** One of this agent's own listings, as GET /v1/me/listings lists it. @param {Partial<Record<string, any>>} [overrides] */
-export function ownListing(overrides = {}) {
-  return {
-    id: POST_ID,
-    title: "Plumbing repairs in Austin",
-    category: "businesses",
-    status: "live",
-    safety: "passed",
-    safety_reason: null,
+    id: BEACON_ID,
+    text: "Free tomorrow 9–12 for leaks and clogs, near 78704, from $95.",
+    state: "on",
+    off_reason: null,
+    until: "2026-10-19T17:00:00Z",
+    updated_at: "2026-10-18T09:00:00Z",
     revision: 3,
-    updated_at: "2026-10-15T09:00:00Z",
+    latest_revision: 3,
+    latest_safety: "passed",
+    answers_waiting: 0,
+    link: `https://openpath.sh/b/${BEACON_ID}`,
     ...overrides,
   };
 }

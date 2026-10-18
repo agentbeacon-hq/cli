@@ -1,10 +1,10 @@
-// How listings, conversations and accounts read in a terminal.
+// How beacons, conversations and accounts read in a terminal.
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
- * Listings and messages are written by strangers. Drop every control character
- * but newline and tab, and the invisible direction marks, so a listing cannot
+ * Beacons and messages are written by strangers. Drop every control character
+ * but newline and tab, and the invisible direction marks, so a beacon cannot
  * move the cursor, recolour the screen or reorder what a reader sees.
  */
 export function clean(/** @type {unknown} */ text) {

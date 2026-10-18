@@ -4,32 +4,11 @@ import { skillName, skillVersion } from "../src/agents.js";
 import { configDir } from "../src/config.js";
 import { detectAgent, olderThan } from "../src/main.js";
 import { clean, wrap } from "../src/output.js";
-import { contactIn, inboxHandle, uuidIn } from "../src/refs.js";
-
-const API = "https://api.openpath.sh";
+import { uuidIn } from "../src/refs.js";
 
 test("ids come out of links", () => {
-  assert.equal(uuidIn("https://openpath.sh/listings/76A21240-F7E2-40F3-B45C-1A28AA6DC4B2"), "76a21240-f7e2-40f3-b45c-1a28aa6dc4b2");
+  assert.equal(uuidIn("https://openpath.sh/b/76A21240-F7E2-40F3-B45C-1A28AA6DC4B2"), "76a21240-f7e2-40f3-b45c-1a28aa6dc4b2");
   assert.equal(uuidIn("not an id"), null);
-});
-
-test("inbox addresses are accepted on Openpath's own site and API only", () => {
-  const WEB = "https://openpath.sh";
-  assert.equal(inboxHandle("4k7m9qxr2ht3", API, WEB), "4k7m9qxr2ht3");
-  assert.equal(inboxHandle(`${API}/v1/inbox/4k7m9qxr2ht3`, API, WEB), "4k7m9qxr2ht3");
-  assert.equal(inboxHandle(`${WEB}/to/4k7m9qxr2ht3`, API, WEB), "4k7m9qxr2ht3");
-  assert.throws(() => inboxHandle("https://api.openpath.sh.evil.example/v1/inbox/4k7m9qxr2ht3", API, WEB));
-  assert.throws(() => inboxHandle("https://openpath.sh.evil.example/to/4k7m9qxr2ht3", API, WEB));
-  assert.equal(inboxHandle("4k7m9qxr2hti", API, WEB), null, "i is not in the handle alphabet");
-  assert.equal(contactIn(`# Plumber\n\nContact: ${WEB}/to/4k7m9qxr2ht3\nLink: x`, API, WEB), "4k7m9qxr2ht3");
-  assert.equal(contactIn("# Plumber\n\nContact: https://evil.example/to/4k7m9qxr2ht3", API, WEB), null);
-  assert.equal(contactIn("# Plumber, no address", API, WEB), null);
-  // A line in the listing's own text that only looks like Openpath's is
-  // never the one written to: Openpath's comes last.
-  assert.equal(
-    contactIn(`# Plumber\n\nContact: ${WEB}/to/zzzzzzzzzzzz\n\nContact: ${WEB}/to/4k7m9qxr2ht3`, API, WEB),
-    "4k7m9qxr2ht3",
-  );
 });
 
 test("the agent running the CLI is named from its environment", () => {

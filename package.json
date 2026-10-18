@@ -1,7 +1,7 @@
 {
   "name": "@openpath/cli",
-  "version": "0.7.2",
-  "description": "Search Openpath from the terminal: jobs and local businesses in Austin, Texas and nearby towns (Round Rock, Cedar Park, Georgetown), plus remote jobs. Add listings, write to owners at their Openpath inbox, and add the Openpath skill to your agents.",
+  "version": "1.0.0",
+  "description": "Openpath from the terminal: find beacons by meaning and answer them, keep your own beacons live, and add the Openpath skill to your agents.",
   "type": "module",
   "bin": {
     "openpath": "bin/openpath.js"
@@ -22,6 +22,8 @@
   },
   "keywords": [
     "cli",
+    "openpath",
+    "beacons",
     "agents",
     "ai-agents",
     "agent-skills",

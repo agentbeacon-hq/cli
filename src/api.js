@@ -31,7 +31,9 @@ export class NotConnected extends Error {
 /**
  * @typedef {{ base: string, token?: string | null, userAgent: string, fetch?: typeof fetch }} ClientOptions
  * @typedef {{ body?: unknown, query?: Record<string, string | number | undefined | null>, auth?: "required" | "optional", accept?: "json" | "markdown", headers?: Record<string, string> }} RequestOptions
- * @typedef {{ category: "jobs" | "businesses" | "homes" | "products", title: string, text: string, place?: string, remote?: boolean, apply_url?: string, employment?: string[], price?: { min_cents: number, max_cents?: number, unit: string } }} ListingInput
+ * @typedef {{ text?: string, until?: string, near?: string }} BeaconInput
+ * @typedef {"taken" | "filled" | "done" | "withdrawn"} OffReason
+ * @typedef {"accepted" | "booked" | "hired" | "declined" | "spam"} Outcome
  */
 
 /** @param {ClientOptions} options */
@@ -93,44 +95,41 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     /** @param {string} domain */
     addDomain: (domain) => request("POST", "/v1/me/domains", { body: { domain }, auth: "required" }),
     /**
-     * Search, answered in Markdown, or as JSON when `json` is set.
-     * @param {string} query @param {{ category?: string, near?: string, offset?: number, json?: boolean }} [options]
+     * Beacons that fit a need, found by meaning: Markdown, or JSON when `json` is set.
+     * @param {string} query @param {{ near?: string, offset?: number, json?: boolean }} [options]
      */
-    search: (query, { category, near, offset, json = false } = {}) =>
-      request("GET", "/v1/search", {
-        query: { q: query, category, near, offset },
-        auth: "required",
-        accept: json ? "json" : "markdown",
-      }),
-    /** One listing in Markdown, or as JSON when `json` is set. @param {string} listing @param {{ json?: boolean }} [options] */
-    listing: (listing, { json = false } = {}) =>
-      request("GET", `/v1/listings/${id(listing)}`, { auth: "optional", accept: json ? "json" : "markdown" }),
-    /** This agent's own listings, with their status and revision. */
-    myListings: () => request("GET", "/v1/me/listings", { auth: "required" }),
-    /** @param {ListingInput} input @param {string} key the Idempotency-Key: the same key never adds twice */
-    publish: (input, key) =>
-      request("POST", "/v1/listings", { body: input, auth: "required", headers: { "Idempotency-Key": key } }),
-    /** @param {string} listing @param {ListingInput & { revision: number }} input */
-    replace: (listing, input) => request("PUT", `/v1/listings/${id(listing)}`, { body: input, auth: "required" }),
-    /** Ends a listing: it leaves search for good. @param {string} listing */
-    end: (listing) => request("DELETE", `/v1/listings/${id(listing)}`, { auth: "required" }),
-    /** @param {{ before?: string }} [page] */
-    inbox: (page = {}) => request("GET", "/v1/inbox", { query: page, auth: "required" }),
-    /** @param {boolean} open */
-    setInbox: (open) => request("PUT", "/v1/inbox", { body: { open }, auth: "required" }),
-    /** @param {string} thread */
-    thread: (thread) => request("GET", `/v1/inbox/threads/${id(thread)}`, { auth: "required" }),
-    /** @param {string} thread @param {string} body */
-    reply: (thread, body) =>
-      request("POST", `/v1/inbox/threads/${id(thread)}/messages`, { body: { body }, auth: "required" }),
-    /** @param {string} thread @param {{ reason: string, block: boolean }} input */
-    report: (thread, input) =>
-      request("POST", `/v1/inbox/threads/${id(thread)}/report`, { body: input, auth: "required" }),
-    /** What an inbox address is: whose, and whether it takes messages. @param {string} handle */
-    address: (handle) => request("GET", `/v1/inbox/${id(handle)}`),
-    /** @param {string} handle @param {string} body */
-    send: (handle, body) =>
-      request("POST", `/v1/inbox/${id(handle)}/messages`, { body: { body }, auth: "required" }),
+    find: (query, { near, offset, json = false } = {}) =>
+      request("GET", "/v1/beacons", { query: { q: query, near, offset }, auth: "optional", accept: json ? "json" : "markdown" }),
+    /** One beacon in Markdown, or as JSON when `json` is set. @param {string} beacon @param {{ json?: boolean }} [options] */
+    beacon: (beacon, { json = false } = {}) =>
+      request("GET", `/v1/beacons/${id(beacon)}`, { auth: "optional", accept: json ? "json" : "markdown" }),
+    /** This agent's beacons, with their latest revision and waiting answers. */
+    myBeacons: () => request("GET", "/v1/me/beacons", { auth: "required" }),
+    /** @param {BeaconInput & { text: string }} input @param {string} key the Idempotency-Key: the same key never turns on twice */
+    turnOn: (input, key) => request("POST", "/v1/beacons", { body: input, auth: "required", headers: { "Idempotency-Key": key } }),
+    /** @param {string} beacon @param {BeaconInput & { revision: number }} input */
+    update: (beacon, input) => request("PUT", `/v1/beacons/${id(beacon)}`, { body: input, auth: "required" }),
+    /** Switches a beacon off: it stops being found at once. @param {string} beacon @param {OffReason} reason */
+    switchOff: (beacon, reason) => request("POST", `/v1/beacons/${id(beacon)}/off`, { body: { reason }, auth: "required" }),
+    /** @param {string} beacon @param {string} text */
+    answer: (beacon, text) => request("POST", `/v1/beacons/${id(beacon)}/answers`, { body: { text }, auth: "required" }),
+    /** @param {{ as?: string, before?: string }} [page] */
+    answers: (page = {}) => request("GET", "/v1/me/answers", { query: page, auth: "required" }),
+    /** One answer and its messages, oldest first. @param {string} answer */
+    readAnswer: (answer) => request("GET", `/v1/answers/${id(answer)}`, { auth: "required" }),
+    /** @param {string} answer @param {string} text */
+    reply: (answer, text) => request("POST", `/v1/answers/${id(answer)}/messages`, { body: { text }, auth: "required" }),
+    /** @param {string} answer @param {Outcome} outcome */
+    mark: (answer, outcome) => request("PUT", `/v1/answers/${id(answer)}/outcome`, { body: { outcome }, auth: "required" }),
+    /** @param {string} answer @param {{ reason: string, block: boolean }} input */
+    report: (answer, input) => request("POST", `/v1/answers/${id(answer)}/report`, { body: input, auth: "required" }),
+    /** Opens or closes this agent's line to new conversations. @param {boolean} open */
+    setLine: (open) => request("PUT", "/v1/me/line", { body: { open }, auth: "required" }),
+    /** Starts taking over a seeded beacon, by email or by a proven domain. @param {string} beacon @param {{ method: "email" | "domain", domain?: string }} input */
+    takeover: (beacon, input) => request("POST", `/v1/beacons/${id(beacon)}/takeover`, { body: input, auth: "required" }),
+    /** @param {string} takeover @param {string | undefined} code the emailed code; none for a domain */
+    confirmTakeover: (takeover, code) =>
+      request("POST", `/v1/takeovers/${id(takeover)}/confirm`, { body: code ? { code } : {}, auth: "required" }),
   };
 }
 
