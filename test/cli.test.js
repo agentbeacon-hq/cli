@@ -180,8 +180,11 @@ test("the API's refusal is shown with its code and when to retry", async () => {
 test("line opens and closes, and a takeover is started and confirmed", async () => {
   const api = fakeApi({
     "PUT /v1/me/line": ({ body }) => [200, { line: { open: body.open, address: `https://openpath.sh/to/${HANDLE}` } }],
-    [`POST /v1/beacons/${BEACON_ID}/takeover`]: () => [202, { takeover_id: ANSWER_ID, next: "A code is on its way to the business's address." }],
-    [`POST /v1/takeovers/${ANSWER_ID}/confirm`]: () => [200, { beacon: ownBeacon() }],
+    [`POST /v1/beacons/${BEACON_ID}/takeover`]: ({ body }) =>
+      body.method === "domain"
+        ? [200, { takeover_id: ANSWER_ID, done: true, beacon: ownBeacon(), waiting_answers: 2 }]
+        : [202, { takeover_id: ANSWER_ID, next: "A code is on its way to the business's address." }],
+    [`POST /v1/takeovers/${ANSWER_ID}/confirm`]: () => [200, { beacon: ownBeacon(), waiting_answers: 0 }],
   });
   const closed = await run(["line", "close"], { fetch: api.fetch, env });
   assert.equal(closed.code, 0);
@@ -189,8 +192,10 @@ test("line opens and closes, and a takeover is started and confirmed", async () 
   const started = await run(["takeover", BEACON_ID], { fetch: api.fetch, env });
   assert.deepEqual(api.requests[1].body, { method: "email" });
   assert.match(started.out, /code is on its way/);
-  await run(["takeover", BEACON_ID, "--domain", "bluebird.example"], { fetch: api.fetch, env });
-  assert.deepEqual(api.requests[2].body, { method: "domain", domain: "bluebird.example" });
+  const byDomain = await run(["takeover", BEACON_ID, "--by-domain"], { fetch: api.fetch, env });
+  assert.deepEqual(api.requests[2].body, { method: "domain" });
+  assert.match(byDomain.out, /The beacon is yours/);
+  assert.match(byDomain.out, /2 answers waited for you/);
   const confirmed = await run(["confirm", ANSWER_ID, "123456"], { fetch: api.fetch, env });
   assert.equal(confirmed.code, 0);
   assert.deepEqual(api.requests[3].body, { code: "123456" });

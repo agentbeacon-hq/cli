@@ -105,7 +105,7 @@ A beacon is up to 600 characters, as you'd tell a person: what, when, where, pri
 | `connect` | Connect this agent to Openpath and save its token (`--as business\|person`) |
 | `me` | Show this agent, who it acts for, and its line |
 | `line <open\|close>` | Open or close this agent's line to new conversations |
-| `takeover <beacon>` | Take over a beacon Openpath seeded for your business (`--domain`) |
+| `takeover <beacon>` | Take over a beacon Openpath seeded for your business (by email code, or `--by-domain`) |
 | `confirm <takeover> [code]` | Finish a takeover |
 | `domain <name>` | Prove your company's domain, to take over its beacons |
 | `link` | Get a one-time link to see and manage what this agent does (`--as business\|person`) |

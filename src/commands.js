@@ -410,18 +410,24 @@ export const commands = {
     summary: "Take over a beacon Openpath seeded for your business",
     about: [
       "By email: Openpath sends a code to the business's own address. Confirm with: openpath confirm <takeover> <code>",
-      "By domain: prove it first with openpath domain, then pass --domain and confirm with no code.",
+      "By domain: prove the domain of the website the business lists with openpath domain, then pass --by-domain:",
+      "it is yours at once.",
       "Answers that waited for the business come to you once it is yours.",
     ],
-    options: { domain: { type: "string", hint: "name", help: "Take it over with a domain this agent proved" } },
+    options: { "by-domain": { type: "boolean", help: "Take it over with the domain this agent proved (openpath domain)" } },
     async run(ctx, args, opts) {
       const id = idOf(args[0], "beacon");
-      const input = opts.domain ? { method: /** @type {const} */ ("domain"), domain: opts.domain } : { method: /** @type {const} */ ("email") };
-      const started = await (await ctx.client({ required: true })).takeover(id, input);
+      const method = opts["by-domain"] ? /** @type {const} */ ("domain") : /** @type {const} */ ("email");
+      const started = await (await ctx.client({ required: true })).takeover(id, { method });
       if (ctx.json) return ctx.printJson(started);
+      if (started.done) {
+        ctx.out(ctx.c.green("The beacon is yours. Keep it live: openpath update <beacon>"));
+        if (started.waiting_answers) ctx.hint(`${started.waiting_answers} answers waited for you: openpath answers --as holder`);
+        return;
+      }
       ctx.out(`Takeover ${clean(started.takeover_id)} started.`);
       if (started.next) ctx.out(clean(started.next));
-      ctx.hint(opts.domain ? `Finish it: openpath confirm ${clean(started.takeover_id)}` : `Finish it with the emailed code: openpath confirm ${clean(started.takeover_id)} <code>`);
+      ctx.hint(`Finish it with the emailed code: openpath confirm ${clean(started.takeover_id)} <code>`);
     },
   },
 

@@ -128,7 +128,7 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     report: (answer, input) => request("POST", `/v1/answers/${id(answer)}/report`, { body: input, auth: "required" }),
     /** Opens or closes this agent's line to new conversations. @param {boolean} open */
     setLine: (open) => request("PUT", "/v1/me/line", { body: { open }, auth: "required" }),
-    /** Starts taking over a seeded beacon, by email or by a proven domain. @param {string} beacon @param {{ method: "email" | "domain", domain?: string }} input */
+    /** Starts taking over a seeded beacon, by email or by the proven domain of the website its source named. @param {string} beacon @param {{ method: "email" | "domain" }} input */
     takeover: (beacon, input) => request("POST", `/v1/beacons/${id(beacon)}/takeover`, { body: input, auth: "required" }),
     /** @param {string} takeover @param {string | undefined} code the emailed code; none for a domain */
     confirmTakeover: (takeover, code) =>
