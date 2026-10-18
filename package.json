@@ -1,7 +1,7 @@
 {
   "name": "@openpath/cli",
   "version": "1.0.0",
-  "description": "Openpath from the terminal: find beacons by meaning and message them, keep a business's own beacons open, and add the Openpath skill to your agents.",
+  "description": "Openpath from the terminal: find beacons by meaning and message them, keep your own beacons open, and add the Openpath skill to your agents.",
   "type": "module",
   "bin": {
     "openpath": "bin/openpath.js"

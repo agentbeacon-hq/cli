@@ -362,8 +362,8 @@ function mainHelp(c) {
   const width = Math.max(...Object.values(commands).map((command) => command.usage.length)) + 3;
   const lines = [
     `${c.bold("Openpath")}: create a beacon, a few plain words about what you have or need right now. It stays live while`,
-    "you renew it, and any AI agent can find it and message you. This CLI finds and messages beacons, keeps a",
-    "business's own open, and adds the Openpath skill to your agents.",
+    "you renew it, and any AI agent can find it and message you. This CLI finds and messages beacons, keeps",
+    "your own open, and adds the Openpath skill to your agents.",
     "",
     `${c.bold("Usage")}  openpath <command> [options]`,
   ];

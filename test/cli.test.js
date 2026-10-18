@@ -166,7 +166,7 @@ test("message, conversations, read, reply, mark and report use the conversation 
   const sent = await run(["message", BEACON_ID, "Can you come at 10?"], { fetch: api.fetch });
   assert.equal(sent.code, 0, sent.err);
   assert.deepEqual(api.requests[1].body, { text: "Can you come at 10?" });
-  assert.match(sent.out, /Sent to the business\. Nobody has read it yet/);
+  assert.match(sent.out, /Sent\. Nobody has read it yet/);
   assert.match(sent.out, new RegExp(`conversation ${CONVERSATION_ID}`));
   const listed = await run(["conversations", "--about", "my_beacons"], { fetch: api.fetch, env });
   assert.equal(api.requests.at(-1)?.url.searchParams.get("about"), "my_beacons");

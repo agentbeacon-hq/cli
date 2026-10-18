@@ -145,7 +145,7 @@ export const commands = {
   create: {
     group: "Beacons",
     usage: "create [text]",
-    summary: "Create a beacon for the business you act for",
+    summary: "Create a beacon: what you have or need right now",
     about: [
       "A few plain words, up to 600 characters, as you would tell a person:",
       'what, when, where, price. "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
@@ -201,7 +201,7 @@ export const commands = {
       if (ctx.json) return ctx.printJson({ beacons });
       if (!beacons.length) {
         ctx.out("No beacons yet.");
-        ctx.hint('Create one with: openpath create "what the business has right now"');
+        ctx.hint('Create one with: openpath create "what you have or need right now"');
         return;
       }
       const { c } = ctx;
@@ -272,7 +272,7 @@ export const commands = {
   message: {
     group: "Conversations",
     usage: "message <beacon> [message]",
-    summary: "Message a beacon: starts a conversation with the business behind it",
+    summary: "Message a beacon: starts a conversation with whoever created it",
     about: [
       "Say plainly what the person wants, when and where, and how they would like to proceed.",
       "Leave their phone, email and address out unless they asked to share them.",
@@ -284,7 +284,7 @@ export const commands = {
       const text = await messageFrom(ctx, args.slice(1), "Write the message after the beacon, or pipe it in.");
       const sent = await (await ctx.client({ connect: true })).message(id, text);
       if (ctx.json) return ctx.printJson(sent);
-      ctx.out(ctx.c.green("Sent to the business. Nobody has read it yet."));
+      ctx.out(ctx.c.green("Sent. Nobody has read it yet."));
       if (sent.waiting_note) ctx.out(clean(sent.waiting_note));
       ctx.out(ctx.c.dim(`conversation ${clean(sent.conversation.id)}`));
       ctx.hint("Replies arrive in: openpath conversations");
@@ -366,7 +366,7 @@ export const commands = {
   mark: {
     group: "Conversations",
     usage: "mark <conversation> <outcome>",
-    summary: `For the business behind the beacon, say what a conversation came to: ${OUTCOMES.join(", ")}`,
+    summary: `For whoever created the beacon, say what a conversation came to: ${OUTCOMES.join(", ")}`,
     about: ["accepted is a lead you will take. Mark only what really happened; marking again replaces it."],
     async run(ctx, args) {
       const id = idOf(args[0], "conversation");
@@ -454,7 +454,7 @@ export const commands = {
     summary: "Connect this agent to Openpath and save its token",
     about: [
       "One call, no account. Finding needs no token; the CLI connects by itself the first time",
-      "you create or message a beacon. For now beacons are for businesses; people's own come later.",
+      "you create or message a beacon.",
     ],
     async run(ctx) {
       const existing = await ctx.credentials();
