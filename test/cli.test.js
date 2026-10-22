@@ -56,7 +56,7 @@ test("create connects first with no body, saves the token privately, and creates
   assert.equal(code, 0, err);
   assert.equal(api.requests[0].url.pathname, "/v1/connect");
   assert.equal(api.requests[0].body, undefined);
-  assert.match(api.requests[0].headers["user-agent"], /^claude-code openpath-cli\/1\.0\.2/);
+  assert.match(api.requests[0].headers["user-agent"], /^claude-code openpath-cli\/0\.1\.0/);
   const sent = api.requests[1];
   assert.equal(sent.headers.authorization, "Bearer agt_test");
   assert.deepEqual(sent.body, { text: "Free tomorrow 9–12 for leaks and clogs, from $95.", location: "78704" });

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { skillName, skillVersion } from "../src/agents.js";
 import { configDir } from "../src/config.js";
-import { detectAgent, olderThan } from "../src/main.js";
+import { detectAgent, outOfDate } from "../src/main.js";
 import { ago, clean, wrap } from "../src/output.js";
 import { uuidIn } from "../src/refs.js";
 
@@ -18,9 +18,10 @@ test("the agent running the CLI is named from its environment", () => {
   assert.equal(detectAgent({}), null);
 });
 
-test("skill versions compare as numbers", () => {
-  assert.equal(olderThan("1.9.0", "1.12.0"), true);
-  assert.equal(olderThan("1.12.0", "1.12.0"), false);
+test("a skill copy of any other version is out of date, a lower one too", () => {
+  assert.equal(outOfDate("1.9.0", "1.12.0"), true);
+  assert.equal(outOfDate("3.2.0", "0.1.0"), true);
+  assert.equal(outOfDate("0.1.0", "0.1.0"), false);
   assert.equal(skillName('---\nname: "openpath"\n---\n'), "openpath");
   assert.equal(skillVersion('---\nname: openpath\nmetadata:\n  version: "1.19.0"\n---\n'), "1.19.0");
 });

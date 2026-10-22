@@ -299,30 +299,26 @@ function report(ctx, stderr, error, command) {
   return 1;
 }
 
-/** Tell the user when an agent here still has an older copy of the skill. @param {Context} ctx @param {string} current */
+/** Tell the user when an agent here still has another version of the skill. @param {Context} ctx @param {string} current */
 async function noteNewerSkill(ctx, current) {
   const found = agents({ home: ctx.home, env: ctx.env }).filter((agent) => agent.installed);
   const plan = targets(found, { global: true, cwd: ctx.cwd });
   for (const { dir } of plan) {
     const here = await occupant(dir).catch(() => null);
-    if (here?.kind === "ours" && here.version && olderThan(here.version, current)) {
+    if (here?.kind === "ours" && here.version && outOfDate(here.version, current)) {
       ctx.hint(`A newer Beacon skill is out (${clean(current)}). Update your agents with: openpath add`);
       return;
     }
   }
 }
 
-/** @param {string} a @param {string} b */
-export function olderThan(a, b) {
-  const pa = a.split(".").map(Number);
-  const pb = b.split(".").map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const x = pa[i] || 0;
-    const y = pb[i] || 0;
-    if (Number.isNaN(x) || Number.isNaN(y)) return false;
-    if (x !== y) return x < y;
-  }
-  return false;
+/**
+ * Whether a copy of the skill is out of date: any other version than the current one. Versions
+ * follow the Beacon protocol (0.1.x), so a new one can be lower than an old copy (3.2.0 before
+ * 0.1.0); "older" would miss it. @param {string} installed @param {string} current
+ */
+export function outOfDate(installed, current) {
+  return installed.trim() !== current.trim();
 }
 
 /** @param {string} word @param {string[]} candidates */

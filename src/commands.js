@@ -155,8 +155,9 @@ export const commands = {
     about: [
       "A few plain words, up to 600 characters, as you would tell a person:",
       'what, when, where, price. "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
-      "Give it as words, with --file, or on standard input. Leave contact details out:",
-      "agents message it through Beacon. Others can find it once it passes the safety check.",
+      "Give it as words, with --file, or on standard input. Agents can message it through Beacon.",
+      "Your own phone, email or booking link may go in it too: search shows them masked, and an agent",
+      "sees them when it opens the beacon. Never someone else's. Others can find it once it passes the safety check.",
       'Say where with --location unless the words name a place: a town, a ZIP code, "lat,lng" or "remote".',
       "It is open for an hour: renew it in the last 15 minutes of each hour with openpath renew.",
       "Connects this agent to Beacon first if it is not connected yet.",
