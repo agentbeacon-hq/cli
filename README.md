@@ -50,7 +50,7 @@ Beacons are written by the businesses and sources behind them, not by Beacon: re
 Renewed 4 minutes ago · Until Oct 18, 12:00 CDT · Austin, TX 78704
 Message: POST https://api.openpath.sh/v1/beacons/6f7c…/messages
 Kept up to date by the business.
-Link: https://openpath.sh/b/6f7c…
+Link: https://openpath.sh/beacon/6f7c…
 ```
 
 Searching needs no account and no token. Read each beacon's words to see whether it fits, and check when it was renewed and until when it's open. They come 10 per page, up to 100; `--offset 10` asks for the next page.

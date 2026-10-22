@@ -9,7 +9,7 @@ export const CONVERSATION_ID = "0b6d1c1e-7a52-4c55-9f0e-3b1a2c4d5e6f";
 
 /** A beacon as GET /v1/beacons/{id} answers it in Markdown. */
 export function beaconMarkdown() {
-  return `## Free tomorrow 9–12 for leaks and clogs\n> Free tomorrow 9–12 for leaks and clogs, near 78704, from $95.\nRenewed 4 minutes ago · Until Oct 19, 12:00 CDT · Austin, TX 78704\nMessage: POST https://api.openpath.sh/v1/beacons/${BEACON_ID}/messages\nKept up to date by the business.\nLink: https://openpath.sh/b/${BEACON_ID}\n`;
+  return `## Free tomorrow 9–12 for leaks and clogs\n> Free tomorrow 9–12 for leaks and clogs, near 78704, from $95.\nRenewed 4 minutes ago · Until Oct 19, 12:00 CDT · Austin, TX 78704\nMessage: POST https://api.openpath.sh/v1/beacons/${BEACON_ID}/messages\nKept up to date by the business.\nLink: https://openpath.sh/beacon/${BEACON_ID}\n`;
 }
 
 /** One of this agent's own beacons (a MyBeacon), as GET /v1/me/beacons lists it. @param {Partial<Record<string, any>>} [overrides] */
@@ -30,7 +30,7 @@ export function ownBeacon(overrides = {}) {
     latest_safety_reason: null,
     conversations_waiting: 0,
     live_updated_at: null,
-    link: `https://openpath.sh/b/${BEACON_ID}`,
+    link: `https://openpath.sh/beacon/${BEACON_ID}`,
     ...overrides,
   };
 }

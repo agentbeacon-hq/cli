@@ -7,7 +7,7 @@ import { ago, clean, wrap } from "../src/output.js";
 import { uuidIn } from "../src/refs.js";
 
 test("ids come out of links", () => {
-  assert.equal(uuidIn("https://openpath.sh/b/76A21240-F7E2-40F3-B45C-1A28AA6DC4B2"), "76a21240-f7e2-40f3-b45c-1a28aa6dc4b2");
+  assert.equal(uuidIn("https://openpath.sh/beacon/76A21240-F7E2-40F3-B45C-1A28AA6DC4B2"), "76a21240-f7e2-40f3-b45c-1a28aa6dc4b2");
   assert.equal(uuidIn("not an id"), null);
 });
 

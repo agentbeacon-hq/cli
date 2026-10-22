@@ -36,7 +36,7 @@ test("search sends the saved token when there is one, and --json asks for JSON",
 
 test("show reads one beacon with no connection and says how to message it", async () => {
   const api = fakeApi({ [`GET /v1/beacons/${BEACON_ID}`]: () => [200, beaconMarkdown()] });
-  const { code, out } = await run(["show", `https://openpath.sh/b/${BEACON_ID}`], { fetch: api.fetch });
+  const { code, out } = await run(["show", `https://openpath.sh/beacon/${BEACON_ID}`], { fetch: api.fetch });
   assert.equal(code, 0);
   assert.equal(api.requests[0].headers.authorization, undefined);
   assert.match(out, new RegExp(`openpath message ${BEACON_ID}`));
@@ -44,7 +44,7 @@ test("show reads one beacon with no connection and says how to message it", asyn
 
 test("a beacon cannot send control characters to the terminal", async () => {
   const api = fakeApi({ [`GET /v1/beacons/${BEACON_ID}`]: () => [200, "## Hi\x1b[2J\x1b]0;owned\x07\n‮evil"] });
-  const { out } = await run(["show", `https://openpath.sh/b/${BEACON_ID}`], { fetch: api.fetch });
+  const { out } = await run(["show", `https://openpath.sh/beacon/${BEACON_ID}`], { fetch: api.fetch });
   assert.doesNotMatch(out, /[\x1b\x07‮]/);
   assert.match(out, /│ ## Hi\[2J\]0;owned/);
 });
