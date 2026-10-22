@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { skillName, skillVersion } from "../src/agents.js";
 import { configDir } from "../src/config.js";
-import { detectAgent, outOfDate } from "../src/main.js";
+import { detectAgent, negativeValues, outOfDate } from "../src/main.js";
 import { ago, clean, wrap } from "../src/output.js";
 import { uuidIn } from "../src/refs.js";
 
@@ -34,11 +34,20 @@ test("the token is kept under openpath, or where the user says", () => {
   assert.equal(configDir({ OPENPATH_CONFIG_DIR: "/elsewhere" }, "/home/me"), "/elsewhere");
 });
 
-test("a live location's age reads in seconds, then minutes", () => {
+test("a location's age reads in seconds, minutes, hours, then days", () => {
   const now = new Date("2026-10-22T12:00:00Z");
-  assert.equal(ago("2026-10-22T11:59:52Z", now), "updated 8 seconds ago");
-  assert.equal(ago("2026-10-22T12:00:00Z", now), "updated 1 second ago");
-  assert.equal(ago("2026-10-22T11:59:00Z", now), "updated 1 minute ago");
-  assert.equal(ago("2026-10-22T11:58:01Z", now), "updated 1 minute ago");
-  assert.equal(ago("2026-10-22T11:58:00Z", now), "updated 2 minutes ago");
+  assert.equal(ago("2026-10-22T11:59:52Z", now), "8 seconds ago");
+  assert.equal(ago("2026-10-22T12:00:00Z", now), "1 second ago");
+  assert.equal(ago("2026-10-22T11:59:00Z", now), "1 minute ago");
+  assert.equal(ago("2026-10-22T11:58:01Z", now), "1 minute ago");
+  assert.equal(ago("2026-10-22T11:58:00Z", now), "2 minutes ago");
+  assert.equal(ago("2026-10-22T09:00:00Z", now), "3 hours ago");
+  assert.equal(ago("2026-10-20T12:00:00Z", now), "2 days ago");
+});
+
+test("a negative number after an option is its value", () => {
+  const options = { lat: { type: "string" }, lng: { type: "string" }, yes: { type: "boolean" } };
+  assert.deepEqual(negativeValues(["x", "--lat", "30.2", "--lng", "-97.7"], options), ["x", "--lat", "30.2", "--lng=-97.7"]);
+  assert.deepEqual(negativeValues(["--yes", "-1"], options), ["--yes", "-1"]);
+  assert.deepEqual(negativeValues(["--", "--lng", "-97.7"], options), ["--", "--lng", "-97.7"]);
 });

@@ -106,7 +106,8 @@ export async function main(argv, io = {}) {
   /** @type {{ values: Record<string, any>, positionals: string[] }} */
   let parsed;
   try {
-    parsed = parseArgs({ args: rest, options: { ...GLOBAL, ...command.options }, allowPositionals: true, strict: true });
+    const options = { ...GLOBAL, ...command.options };
+    parsed = parseArgs({ args: negativeValues(rest, options), options, allowPositionals: true, strict: true });
   } catch (error) {
     write(stderr, c.red(/** @type {Error} */ (error).message.replace(/\. To specify a positional.*$/s, ".")));
     write(stderr, c.dim(`See: openpath ${commandName} --help`));
@@ -253,6 +254,27 @@ function splitCommand(argv) {
   return { name: null, rest: argv };
 }
 
+/**
+ * A negative number after an option that takes a value is that value (`--lng -97.7431`), which
+ * parseArgs would refuse as ambiguous; joined as `--lng=-97.7431`, it reads as meant.
+ * @param {string[]} args @param {Record<string, { type: string }>} options
+ */
+export function negativeValues(args, options) {
+  /** @type {string[]} */
+  const joined = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--") return [...joined, ...args.slice(i)];
+    const name = arg.startsWith("--") && !arg.includes("=") ? arg.slice(2) : null;
+    if (name && options[name]?.type === "string" && /^-\d/.test(args[i + 1] ?? "")) {
+      joined.push(`${arg}=${args[++i]}`);
+      continue;
+    }
+    joined.push(arg);
+  }
+  return joined;
+}
+
 /** @param {Context} ctx @param {NodeJS.WritableStream} stderr @param {unknown} error @param {string} command */
 function report(ctx, stderr, error, command) {
   const { c } = ctx;
@@ -375,7 +397,7 @@ function mainHelp(c) {
     c.bold("Examples"),
     '  openpath search "a plumber free tomorrow near 78704"',
     '  openpath message <beacon> "Can you come at 10?"',
-    '  openpath create "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
+    '  openpath create "Free tomorrow 9–12 for leaks and clogs near 78704, from $95." --lat 30.2416 --lng -97.7695',
     "  openpath renew <beacon>",
     "  openpath delete <beacon>",
     "  openpath add",

@@ -31,7 +31,8 @@ export class NotConnected extends Error {
 /**
  * @typedef {{ base: string, token?: string | null, userAgent: string, fetch?: typeof fetch }} ClientOptions
  * @typedef {{ body?: unknown, query?: Record<string, string | number | undefined | null>, auth?: "required" | "optional", accept?: "json" | "markdown", headers?: Record<string, string> }} RequestOptions
- * @typedef {{ text?: string, location?: string }} BeaconInput
+ * @typedef {{ lat: number, lng: number }} Point
+ * @typedef {{ text?: string, location?: Point | null }} BeaconInput
  * @typedef {"accepted" | "booked" | "hired" | "declined" | "spam"} Outcome
  */
 
@@ -103,17 +104,16 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     /** One beacon in Markdown, or as JSON when `json` is set. Needs no token. @param {string} beacon @param {{ json?: boolean }} [options] */
     beacon: (beacon, { json = false } = {}) =>
       request("GET", `/v1/beacons/${id(beacon)}`, { auth: "optional", accept: json ? "json" : "markdown" }),
-    /** This agent's beacons: until when each is open, when to renew it, and new messages. */
+    /** This agent's beacons, each with `mine`: when to renew it, its latest revision, conversations waiting. */
     myBeacons: () => request("GET", "/v1/me/beacons", { auth: "required" }),
     /** @param {BeaconInput & { text: string }} input @param {string} key the Idempotency-Key: the same key never creates twice */
     create: (input, key) => request("POST", "/v1/beacons", { body: input, auth: "required", headers: { "Idempotency-Key": key } }),
     /**
-     * Keeps a beacon open one more hour, in the last 15 minutes of its hour. A location as "lat,lng"
-     * shares where it is now, as a live location.
-     * @param {string} beacon @param {string} [location]
+     * Keeps a beacon open one more hour, in the last 15 minutes of its hour. A location says where it is now.
+     * @param {string} beacon @param {Point | null} [location]
      */
     renew: (beacon, location) =>
-      request("POST", `/v1/beacons/${id(beacon)}/renew`, { auth: "required", ...(location ? { body: { location } } : {}) }),
+      request("POST", `/v1/beacons/${id(beacon)}/renew`, { auth: "required", ...(location !== undefined ? { body: { location } } : {}) }),
     /** @param {string} beacon @param {BeaconInput & { revision: number }} input */
     update: (beacon, input) => request("PUT", `/v1/beacons/${id(beacon)}`, { body: input, auth: "required" }),
     /** Deletes a beacon: gone from search at once, its words erased after 30 days. @param {string} beacon */

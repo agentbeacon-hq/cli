@@ -46,14 +46,18 @@ export function moment(/** @type {string | null | undefined} */ iso) {
   return `${date.getDate()} ${MONTHS[date.getMonth()]} ${time}`;
 }
 
-/** `updated 8 seconds ago`, `updated 1 minute ago`: how old a live location is. @param {string} iso @param {Date} [now] */
+/** `8 seconds ago`, `1 minute ago`, `3 hours ago`, `2 days ago`: how old a location is. @param {string} iso @param {Date} [now] */
 export function ago(iso, now = new Date()) {
   const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return `updated ${clean(iso)}`;
+  if (Number.isNaN(at.getTime())) return clean(iso);
+  const count = (/** @type {number} */ n, /** @type {string} */ unit) => `${n} ${unit}${n === 1 ? "" : "s"} ago`;
   const seconds = Math.max(1, Math.floor((now.getTime() - at.getTime()) / 1000));
-  if (seconds < 60) return `updated ${seconds === 1 ? "1 second" : `${seconds} seconds`} ago`;
+  if (seconds < 60) return count(seconds, "second");
   const minutes = Math.floor(seconds / 60);
-  return `updated ${minutes === 1 ? "1 minute" : `${minutes} minutes`} ago`;
+  if (minutes < 60) return count(minutes, "minute");
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return count(hours, "hour");
+  return count(Math.floor(hours / 24), "day");
 }
 
 /** A text block set off with a rule, wrapped to `width`, so it reads as quoted. @param {string} text @param {Palette} c @param {number} width */
