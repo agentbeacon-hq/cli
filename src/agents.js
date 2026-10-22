@@ -1,4 +1,4 @@
-// Where each agent reads skills from, and adding or removing the Openpath
+// Where each agent reads skills from, and adding or removing the Beacon
 // skill there. The folders follow the open skills ecosystem, so a copy added
 // here sits exactly where `npx skills add` would put it.
 
@@ -121,7 +121,7 @@ export async function removeSkill(dir) {
 }
 
 /**
- * The skill as Openpath publishes it now.
+ * The skill as Beacon publishes it now.
  * @param {string} web
  * @param {{ fetch: typeof fetch, userAgent: string }} io
  */
@@ -138,7 +138,7 @@ export async function downloadSkill(web, { fetch: send, userAgent }) {
     files[name] = await response.text();
   }
   if (skillName(files["SKILL.md"]) !== SKILL) {
-    throw new Error(`${root}/skill.md is not the Openpath skill. Nothing was written.`);
+    throw new Error(`${root}/skill.md is not the Beacon skill. Nothing was written.`);
   }
   return { files, version: skillVersion(files["SKILL.md"]) };
 }

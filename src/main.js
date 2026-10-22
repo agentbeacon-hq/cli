@@ -22,7 +22,7 @@ const ALIASES = /** @type {Record<string, string>} */ ({
 const GLOBAL = {
   json: { type: /** @type {const} */ ("boolean"), help: "Print the API's JSON, for scripts and agents" },
   yes: { type: /** @type {const} */ ("boolean"), short: "y", help: "Answer yes to every prompt" },
-  api: { type: /** @type {const} */ ("string"), hint: "url", help: `Use another Openpath API (default ${DEFAULT_API})` },
+  api: { type: /** @type {const} */ ("string"), hint: "url", help: `Use another Beacon API (default ${DEFAULT_API})` },
   help: { type: /** @type {const} */ ("boolean"), short: "h", help: "Show help" },
 };
 
@@ -31,7 +31,7 @@ class Cancelled extends Error {}
 
 /**
  * The agent running this CLI, if one is, from the variables agents set.
- * It leads the User-Agent so Openpath can see which agents turn up.
+ * It leads the User-Agent so Beacon can see which agents turn up.
  * @param {NodeJS.ProcessEnv} env
  */
 export function detectAgent(env) {
@@ -188,7 +188,7 @@ export async function main(argv, io = {}) {
       tokenSource = tilde(file);
       client = null;
       const say = primary && !ctx.json ? ctx.out : (/** @type {string} */ line) => write(stderr, line);
-      say(c.green(`Connected this agent to Openpath. Agent ${clean(result.agent_id)}.`));
+      say(c.green(`Connected this agent to Beacon. Agent ${clean(result.agent_id)}.`));
       say(c.dim(`The token is saved in ${tilde(file)}, readable only by you.`));
       return result;
     },
@@ -278,7 +278,7 @@ function report(ctx, stderr, error, command) {
     // What the API says to do next, except for a token it refused: the CLI says that its own way.
     if (error.next && error.status !== 401) say(clean(error.next));
     if (error.status === 401) {
-      say(`Openpath did not accept the token from ${ctx.tokenSource ?? "this machine"}. If it was revoked, its owner can check on the account page.`);
+      say(`Beacon did not accept the token from ${ctx.tokenSource ?? "this machine"}. If it was revoked, its owner can check on the account page.`);
       say(c.dim("Connecting again would make a separate account, so it is not a fix."));
     } else if (error.code === "account_not_linked") {
       say("Someone has to sign in to this account first. The link is in: openpath me");
@@ -306,7 +306,7 @@ async function noteNewerSkill(ctx, current) {
   for (const { dir } of plan) {
     const here = await occupant(dir).catch(() => null);
     if (here?.kind === "ours" && here.version && olderThan(here.version, current)) {
-      ctx.hint(`A newer Openpath skill is out (${clean(current)}). Update your agents with: openpath add`);
+      ctx.hint(`A newer Beacon skill is out (${clean(current)}). Update your agents with: openpath add`);
       return;
     }
   }
@@ -361,9 +361,9 @@ function mainHelp(c) {
   for (const command of Object.values(commands)) (groups[command.group] ??= []).push([command.usage, command.summary]);
   const width = Math.max(...Object.values(commands).map((command) => command.usage.length)) + 3;
   const lines = [
-    `${c.bold("Openpath")}: create a beacon, a few plain words about what you have or need right now. It stays live while`,
+    `${c.bold("Beacon")}. Create a beacon: a few plain words about what you have or need right now. It stays live while`,
     "you renew it, and any AI agent can find it and message you. This CLI finds and messages beacons, keeps",
-    "your own open, and adds the Openpath skill to your agents.",
+    "your own open, and adds the Beacon skill to your agents.",
     "",
     `${c.bold("Usage")}  openpath <command> [options]`,
   ];

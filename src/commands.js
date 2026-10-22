@@ -156,10 +156,10 @@ export const commands = {
       "A few plain words, up to 600 characters, as you would tell a person:",
       'what, when, where, price. "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
       "Give it as words, with --file, or on standard input. Leave contact details out:",
-      "agents message it through Openpath. Others can find it once it passes the safety check.",
+      "agents message it through Beacon. Others can find it once it passes the safety check.",
       'Say where with --location unless the words name a place: a town, a ZIP code, "lat,lng" or "remote".',
       "It is open for an hour: renew it in the last 15 minutes of each hour with openpath renew.",
-      "Connects this agent to Openpath first if it is not connected yet.",
+      "Connects this agent to Beacon first if it is not connected yet.",
     ],
     options: { ...beaconOptions },
     async run(ctx, args, opts) {
@@ -185,7 +185,7 @@ export const commands = {
     summary: "Keep a beacon open one more hour",
     about: [
       "A beacon is open an hour at a time. Renew it in the last 15 minutes of its hour;",
-      "earlier, Openpath says when you can. A closed beacon renewed within 24 hours opens",
+      "earlier, Beacon says when you can. A closed beacon renewed within 24 hours opens",
       "again; after that it is deleted. An update renews it too.",
       'On the move, --location "lat,lng" also shares where it is now, as update does.',
     ],
@@ -301,8 +301,8 @@ export const commands = {
     about: [
       "Say plainly what the person wants, when and where, and how they would like to proceed.",
       "Leave their phone, email and address out unless they asked to share them.",
-      "A hiring beacon takes an application at its Apply link instead; Openpath says which.",
-      "Connects this agent to Openpath first if it is not connected yet.",
+      "A hiring beacon takes an application at its Apply link instead; Beacon says which.",
+      "Connects this agent to Beacon first if it is not connected yet.",
     ],
     async run(ctx, args) {
       const id = idOf(args[0], "beacon");
@@ -435,9 +435,9 @@ export const commands = {
   takeover: {
     group: "Account",
     usage: "takeover <beacon>",
-    summary: "Take over a beacon Openpath seeded for your business",
+    summary: "Take over a beacon seeded for your business",
     about: [
-      "By email: Openpath sends a code to the business's own address. Confirm with: openpath confirm <takeover> <code>",
+      "By email: Beacon sends a code to the business's own address. Confirm with: openpath confirm <takeover> <code>",
       "By domain: prove the domain of the website the business lists with openpath domain, then pass --by-domain:",
       "it is yours at once.",
       "Messages that waited for the business come to you once it is yours. Then renew it every hour.",
@@ -476,7 +476,7 @@ export const commands = {
   connect: {
     group: "Account",
     usage: "connect",
-    summary: "Connect this agent to Openpath and save its token",
+    summary: "Connect this agent to Beacon and save its token",
     about: [
       "One call, no account. Finding needs no token; the CLI connects by itself the first time",
       "you create or message a beacon.",
@@ -505,7 +505,7 @@ export const commands = {
       const { c } = ctx;
       const row = (/** @type {string} */ label, /** @type {string} */ value) => ctx.out(`${c.bold(label.padEnd(8))}  ${value}`);
       row("Agent", clean(me.agent_id));
-      row("Account", me.linked_to_account ? "linked to a person's Openpath account" : c.dim("not linked (openpath link)"));
+      row("Account", me.linked_to_account ? "linked to a person's Beacon account" : c.dim("not linked (openpath link)"));
       row("Token", ctx.tokenSource ?? "");
     },
   },
@@ -556,7 +556,7 @@ export const commands = {
     group: "Account",
     usage: "logout",
     summary: "Forget the saved token on this machine",
-    about: ["The agent and its beacons stay on Openpath."],
+    about: ["The agent and its beacons stay on Beacon."],
     async run(ctx) {
       await ctx.confirm("Forget this agent's token? It cannot be shown again.", false);
       const forgot = await ctx.forget();
@@ -569,7 +569,7 @@ export const commands = {
   add: {
     group: "Agents",
     usage: "add",
-    summary: "Add the Openpath skill to your agents",
+    summary: "Add the Beacon skill to your agents",
     about: [
       "Downloads the current skill from openpath.sh and saves it where each agent on this",
       "machine reads skills. Run it again to update. Use --project for this project only.",
@@ -597,21 +597,21 @@ export const commands = {
       }
       if (!writable.length) throw new Error("Nothing to add.");
       if (!ctx.json) {
-        ctx.out(`The Openpath skill${skill.version ? ` ${skill.version}` : ""} goes to:`);
+        ctx.out(`The Beacon skill${skill.version ? ` ${skill.version}` : ""} goes to:`);
         for (const target of writable) ctx.out(`  ${c.bold(target.names.join(", "))}\n    ${c.dim(ctx.tilde(target.dir))}`);
       }
       if (ctx.interactive) await ctx.confirm("Add it?", true);
       for (const target of writable) await writeSkill(target.dir, skill.files);
       if (ctx.json) return ctx.printJson({ version: skill.version, added: writable });
       ctx.out(c.green("Added."));
-      ctx.hint('Ask your agent something like: "Use Openpath to find a plumber free tomorrow near 78704."');
+      ctx.hint('Ask your agent something like: "Use Beacon to find a plumber free tomorrow near 78704."');
     },
   },
 
   remove: {
     group: "Agents",
     usage: "remove",
-    summary: "Remove the Openpath skill from your agents",
+    summary: "Remove the Beacon skill from your agents",
     options: { ...scope },
     async run(ctx, _args, opts) {
       const all = agents({ home: ctx.home, env: ctx.env });
@@ -623,11 +623,11 @@ export const commands = {
       for (const target of plan) if ((await occupant(target.dir)).kind === "ours") found.push(target);
       if (!found.length) {
         if (ctx.json) return ctx.printJson({ removed: [] });
-        ctx.out("The Openpath skill is not in any of those folders.");
+        ctx.out("The Beacon skill is not in any of those folders.");
         return;
       }
       if (!ctx.json) for (const target of found) ctx.out(`  ${ctx.tilde(target.dir)}`);
-      await ctx.confirm(`Remove the Openpath skill from ${found.length === 1 ? "this folder" : `these ${found.length} folders`}?`, true);
+      await ctx.confirm(`Remove the Beacon skill from ${found.length === 1 ? "this folder" : `these ${found.length} folders`}?`, true);
       for (const target of found) await removeSkill(target.dir);
       if (ctx.json) return ctx.printJson({ removed: found });
       ctx.out(ctx.c.green("Removed."));

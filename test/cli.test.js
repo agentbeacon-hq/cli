@@ -62,7 +62,7 @@ test("create connects first with no body, saves the token privately, and creates
   assert.match(sent.headers["idempotency-key"], /^cli-[0-9a-f]{32}$/);
   assert.match(out, /Created\./);
   assert.match(out, new RegExp(`Open until ${TIME}\\. Renew it from ${TIME}: openpath renew ${BEACON_ID}`));
-  assert.match(err, /Connected this agent to Openpath/);
+  assert.match(err, /Connected this agent to Beacon/);
   const file = join(home, ".config/openpath/credentials.json");
   assert.equal((await stat(file)).mode & 0o777, 0o600);
   const saved = JSON.parse(await readFile(file, "utf8"))["https://api.openpath.sh"];
@@ -346,7 +346,7 @@ test("connect does not make a second account when one is saved", async () => {
 });
 
 test("add puts the skill where each agent found reads skills, and remove takes it away", async () => {
-  const skill = '---\nname: openpath\nmetadata:\n  version: "1.19.0"\n---\n# Openpath\n';
+  const skill = '---\nname: openpath\nmetadata:\n  version: "1.19.0"\n---\n# Beacon\n';
   const site = fakeApi({ "GET /skill.md": () => [200, skill], "GET /heartbeat.md": () => [200, "# Heartbeat\n"] });
   const { home } = await run(["--version"]);
   await mkdir(join(home, ".claude"));
@@ -371,11 +371,11 @@ test("add puts the skill where each agent found reads skills, and remove takes i
   assert.match(await readFile(join(home, ".cursor/skills/openpath/SKILL.md"), "utf8"), /someone-else/);
 });
 
-test("add refuses a download that is not the Openpath skill", async () => {
+test("add refuses a download that is not the Beacon skill", async () => {
   const site = fakeApi({ "GET /skill.md": () => [200, "<html>login</html>"], "GET /heartbeat.md": () => [200, ""] });
   const { code, err, home } = await run(["add", "-a", "claude-code"], { fetch: site.fetch });
   assert.equal(code, 1);
-  assert.match(err, /not the Openpath skill/);
+  assert.match(err, /not the Beacon skill/);
   await assert.rejects(stat(join(home, ".claude/skills/openpath")));
 });
 
