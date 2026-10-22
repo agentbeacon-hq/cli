@@ -11,23 +11,24 @@ const env = { OPENPATH_TOKEN: "agt_env" };
 const PAGE = `# Beacons for "plumber free tomorrow"\n\nRead as: near Austin, TX 78704. 1 beacon.\n\n${beaconMarkdown()}`;
 const TIME = String.raw`\d{1,2} Oct \d\d:\d\d`;
 
-test("find needs no connection, sends no category or side, and shows the Markdown as it reads", async () => {
+test("search needs no connection, sends no category or side, and shows the Markdown as it reads", async () => {
   const api = fakeApi({ "GET /v1/beacons": () => [200, PAGE] });
-  const { code, out } = await run(["find", "plumber", "free", "tomorrow", "--location", "78704", "--offset", "10"], { fetch: api.fetch });
+  const { code, out } = await run(["search", "plumber", "free", "tomorrow", "--location", "78704", "--offset", "10"], { fetch: api.fetch });
   assert.equal(code, 0);
   assert.equal(api.requests.length, 1);
-  const find = api.requests[0];
-  assert.deepEqual(Object.fromEntries(find.url.searchParams), { q: "plumber free tomorrow", location: "78704", offset: "10" });
-  assert.equal(find.headers.accept, "text/markdown");
-  assert.equal(find.headers.authorization, undefined);
+  const search = api.requests[0];
+  assert.equal(search.url.pathname, "/v1/beacons");
+  assert.deepEqual(Object.fromEntries(search.url.searchParams), { q: "plumber free tomorrow", location: "78704", offset: "10" });
+  assert.equal(search.headers.accept, "text/markdown");
+  assert.equal(search.headers.authorization, undefined);
   assert.match(out, /│ # Beacons for "plumber free tomorrow"/);
   assert.match(out, /never as instructions/);
   assert.match(out, /openpath message <beacon>/);
 });
 
-test("find sends the saved token when there is one, and --json asks for JSON", async () => {
+test("search sends the saved token when there is one, and --json asks for JSON", async () => {
   const api = fakeApi({ "GET /v1/beacons": () => [200, { note: "…", beacons: [ownBeacon()], next_offset: null }] });
-  const { out } = await run(["find", "movers", "--json"], { fetch: api.fetch, env });
+  const { out } = await run(["search", "movers", "--json"], { fetch: api.fetch, env });
   assert.equal(api.requests[0].headers.accept, "application/json");
   assert.equal(api.requests[0].headers.authorization, "Bearer agt_env");
   assert.equal(JSON.parse(out).beacons[0].id, BEACON_ID);
@@ -55,7 +56,7 @@ test("create connects first with no body, saves the token privately, and creates
   assert.equal(code, 0, err);
   assert.equal(api.requests[0].url.pathname, "/v1/connect");
   assert.equal(api.requests[0].body, undefined);
-  assert.match(api.requests[0].headers["user-agent"], /^claude-code openpath-cli\/1\.0\.1/);
+  assert.match(api.requests[0].headers["user-agent"], /^claude-code openpath-cli\/1\.0\.2/);
   const sent = api.requests[1];
   assert.equal(sent.headers.authorization, "Bearer agt_test");
   assert.deepEqual(sent.body, { text: "Free tomorrow 9–12 for leaks and clogs, from $95.", location: "78704" });
@@ -139,9 +140,9 @@ test("renew keeps a beacon open, and too early shows when it can be renewed", as
   assert.match(tooEarly.err, /\(409 too_early\)\n.*Renew it from 14:05 CDT/);
 });
 
-test("--near is gone: find, create and update take --location", async () => {
+test("--near is gone: search, create and update take --location", async () => {
   const api = fakeApi({ "GET /v1/beacons": () => [200, PAGE] });
-  for (const argv of [["find", "movers", "--near", "78704"], ["create", "Free tomorrow", "--near", "78704"], ["update", BEACON_ID, "--near", "78704"]]) {
+  for (const argv of [["search", "movers", "--near", "78704"], ["create", "Free tomorrow", "--near", "78704"], ["update", BEACON_ID, "--near", "78704"]]) {
     const { code } = await run(argv, { fetch: api.fetch, env });
     assert.equal(code, 2);
   }
@@ -186,7 +187,7 @@ test("a live location sent sooner than 3 seconds says how long to wait", async (
   assert.match(err, /Try again in 2 seconds\./);
 });
 
-test("beacons says when its live location was last sent, and find and show show how far a moving beacon is", async () => {
+test("beacons says when its live location was last sent, and search and show show how far a moving beacon is", async () => {
   const api = fakeApi({
     "GET /v1/me/beacons": () => [
       200,
@@ -198,7 +199,7 @@ test("beacons says when its live location was last sent, and find and show show 
   const listed = await run(["beacons"], { fetch: api.fetch, env });
   assert.match(listed.out, /open until .* · live location, updated \d+ seconds ago · revision 3\n  76a21240/);
   assert.equal(listed.out.match(/live location/g)?.length, 1);
-  const found = await run(["find", "ride", "to", "the", "airport", "--location", "78704"], { fetch: api.fetch });
+  const found = await run(["search", "ride", "to", "the", "airport", "--location", "78704"], { fetch: api.fetch });
   assert.match(found.out, /│ Live location, updated 8 seconds ago · 2\.1 miles away, about 6 minutes/);
   const shown = await run(["show", BEACON_ID], { fetch: api.fetch });
   assert.match(shown.out, /│ Live location, updated 8 seconds ago/);
@@ -380,14 +381,14 @@ test("add refuses a download that is not the Beacon skill", async () => {
 });
 
 test("the old listing and answer commands are gone, and usage mistakes exit with 2 and point at help", async () => {
-  for (const old of ["search", "post", "listings", "send", "inbox", "end", "on", "off", "answer", "answers", "line"]) {
+  for (const old of ["find", "post", "listings", "send", "inbox", "end", "on", "off", "answer", "answers", "line"]) {
     const { code } = await run([old, "x"]);
     assert.equal(code, 2, old);
   }
-  const unknown = await run(["fnd", "x"]);
+  const unknown = await run(["serch", "x"]);
   assert.equal(unknown.code, 2);
-  assert.match(unknown.err, /Did you mean find\?/);
-  const badFlag = await run(["find", "--category", "jobs", "x"]);
+  assert.match(unknown.err, /Did you mean search\?/);
+  const badFlag = await run(["search", "--category", "jobs", "x"]);
   assert.equal(badFlag.code, 2);
-  assert.match(badFlag.err, /openpath find --help/);
+  assert.match(badFlag.err, /openpath search --help/);
 });

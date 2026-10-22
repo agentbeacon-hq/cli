@@ -98,7 +98,7 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
      * Beacons that fit a need, found by meaning: Markdown, or JSON when `json` is set. Needs no token.
      * @param {string} query @param {{ location?: string, offset?: number, json?: boolean }} [options]
      */
-    find: (query, { location, offset, json = false } = {}) =>
+    search: (query, { location, offset, json = false } = {}) =>
       request("GET", "/v1/beacons", { query: { q: query, location, offset }, auth: "optional", accept: json ? "json" : "markdown" }),
     /** One beacon in Markdown, or as JSON when `json` is set. Needs no token. @param {string} beacon @param {{ json?: boolean }} [options] */
     beacon: (beacon, { json = false } = {}) =>

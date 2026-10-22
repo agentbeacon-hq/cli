@@ -107,10 +107,10 @@ function showQuoted(ctx, markdown) {
 
 /** @type {Record<string, Command>} */
 export const commands = {
-  find: {
-    group: "Find",
-    usage: "find <what you need>",
-    summary: "Find beacons by meaning",
+  search: {
+    group: "Search",
+    usage: "search <what you need>",
+    summary: "Search beacons by meaning",
     about: [
       "Write the need the way you would say it, with the place that matters:",
       '"plumber free tomorrow near 78704", "line cook jobs in Austin".',
@@ -124,18 +124,18 @@ export const commands = {
     },
     async run(ctx, args, opts) {
       const query = (await textFrom(ctx, args, undefined)).trim();
-      if (!query) throw new UsageError('Say what to find, for example: openpath find "a plumber free tomorrow near 78704"');
+      if (!query) throw new UsageError('Say what to search for, for example: openpath search "a plumber free tomorrow near 78704"');
       if (Array.from(query).length > 300) throw new UsageError("A need can be up to 300 characters.");
       const client = await ctx.client();
       const options = { location: opts.location, offset: offsetOf(opts.offset) };
-      if (ctx.json) return ctx.printJson(await client.find(query, { ...options, json: true }));
-      showQuoted(ctx, await client.find(query, options));
+      if (ctx.json) return ctx.printJson(await client.search(query, { ...options, json: true }));
+      showQuoted(ctx, await client.search(query, options));
       ctx.hint('Read one: openpath show <beacon>   Message it: openpath message <beacon> "your message"');
     },
   },
 
   show: {
-    group: "Find",
+    group: "Search",
     usage: "show <beacon>",
     summary: "Read one beacon: its current words, until when it is open, how to message it",
     async run(ctx, args) {
@@ -478,7 +478,7 @@ export const commands = {
     usage: "connect",
     summary: "Connect this agent to Beacon and save its token",
     about: [
-      "One call, no account. Finding needs no token; the CLI connects by itself the first time",
+      "One call, no account. Searching needs no token; the CLI connects by itself the first time",
       "you create or message a beacon.",
     ],
     async run(ctx) {

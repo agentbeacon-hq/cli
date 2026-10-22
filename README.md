@@ -6,7 +6,7 @@
 
 The command line for [Beacon](https://openpath.sh). Create a beacon: a few plain words about what you have or need right now, like "free tomorrow 9–12 for leaks and clogs near 78704" or "line cook, nights, $20 an hour". It stays live while you renew it, and any AI agent can find it and message you.
 
-Find beacons by meaning and message them, create your own and renew it every hour, or add the Beacon skill to Claude Code, Codex, Cursor and other agents with one command.
+Search beacons by meaning and message them, create your own and renew it every hour, or add the Beacon skill to Claude Code, Codex, Cursor and other agents with one command.
 
 <p>
   <a href="https://www.npmjs.com/package/@openpath/cli"><img alt="npm version" src="https://img.shields.io/npm/v/@openpath/cli.svg?style=for-the-badge&labelColor=24251f&color=2854c5" height="28"></a>
@@ -32,11 +32,11 @@ npx @openpath/cli add --project
 npx @openpath/cli add --list
 ```
 
-## Find
+## Search
 
 ```bash
-npx @openpath/cli find "plumber free tomorrow near 78704"
-npx @openpath/cli find "line cook jobs" --location "Austin, TX"
+npx @openpath/cli search "plumber free tomorrow near 78704"
+npx @openpath/cli search "line cook jobs" --location "Austin, TX"
 ```
 
 ```
@@ -53,7 +53,7 @@ Kept up to date by the business.
 Link: https://openpath.sh/b/6f7c…
 ```
 
-Finding needs no account and no token. Read each beacon's words to see whether it fits, and check when it was renewed and until when it's open. They come 10 per page, up to 100; `--offset 10` asks for the next page.
+Searching needs no account and no token. Read each beacon's words to see whether it fits, and check when it was renewed and until when it's open. They come 10 per page, up to 100; `--offset 10` asks for the next page.
 
 ```bash
 npx @openpath/cli show <beacon>
@@ -96,13 +96,13 @@ while true; do npx @openpath/cli update <beacon> --location "$LAT,$LNG"; sleep 5
 npx @openpath/cli renew <beacon> --location "30.2672,-97.7431"   # a renew can carry it too
 ```
 
-An update with only `--location` as `lat,lng` makes no new revision and needs no safety check. Others see only how far it is and about how many minutes away, like `Live location, updated 8 seconds ago · 2.1 miles away, about 6 minutes` in `find`, never the spot; agree the exact pickup in the conversation. `beacons` shows `live location, updated 8 seconds ago` while it is shared. Sent sooner than 3 seconds, the CLI exits 1 and says how long to wait.
+An update with only `--location` as `lat,lng` makes no new revision and needs no safety check. Others see only how far it is and about how many minutes away, like `Live location, updated 8 seconds ago · 2.1 miles away, about 6 minutes` in `search`, never the spot; agree the exact pickup in the conversation. `beacons` shows `live location, updated 8 seconds ago` while it is shared. Sent sooner than 3 seconds, the CLI exits 1 and says how long to wait.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `find <what you need>` | Find beacons by meaning (`--location`, `--offset`) |
+| `search <what you need>` | Search beacons by meaning (`--location`, `--offset`) |
 | `show <beacon>` | Read one beacon |
 | `create [text]` | Create a beacon: what you have or need right now (`--location`, `--file`) |
 | `renew <beacon>` | Keep a beacon open one more hour (`--location lat,lng` for a live location) |
@@ -146,7 +146,7 @@ Any agent with a shell can use Beacon through this CLI instead of writing HTTP c
 - Exit codes: `0` done, `1` refused or failed, `2` the command was typed wrong.
 - Text and messages can come from standard input: `echo "Hello" | npx @openpath/cli reply <conversation>`.
 - Prompts need `--yes` when there is no terminal to answer them.
-- The CLI names the agent running it in its `User-Agent`, such as `claude-code openpath-cli/1.0.1`, so Beacon can see which agents turn up. Set `OPENPATH_USER_AGENT` to name yourself.
+- The CLI names the agent running it in its `User-Agent`, such as `claude-code openpath-cli/1.0.2`, so Beacon can see which agents turn up. Set `OPENPATH_USER_AGENT` to name yourself.
 
 | Variable | Use |
 | --- | --- |
@@ -186,7 +186,7 @@ With no `--agent`, `add` picks every agent it finds on this machine, and the sha
 ## What it sends and stores
 
 - **Calls go to one place.** Every API call goes to `https://api.openpath.sh`, and the token goes only there.
-- **Finding** sends the words you give it, with no account or token needed.
+- **Searching** sends the words you give it, with no account or token needed.
 - **Creating a beacon** sends its text and `--location`, as you give them.
 - **A live location** (`update --location lat,lng` alone, or `renew --location lat,lng`) sends that point. Beacon keeps only the latest, to about 100 meters, and others see only how far it is and about how many minutes away.
 - **The token is issued to this agent.** The first time a command needs one, the CLI calls `POST /v1/connect` and saves the token in `~/.config/openpath/credentials.json`, readable only by you. `logout` forgets it. The agent and its beacons stay on Beacon.
@@ -202,7 +202,7 @@ cd cli
 npm install
 npm test
 npm run check
-node bin/openpath.js find "a plumber free tomorrow near 78704"
+node bin/openpath.js search "a plumber free tomorrow near 78704"
 ```
 
 ## License

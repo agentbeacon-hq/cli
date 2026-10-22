@@ -362,7 +362,7 @@ function mainHelp(c) {
   const width = Math.max(...Object.values(commands).map((command) => command.usage.length)) + 3;
   const lines = [
     `${c.bold("Beacon")}. Create a beacon: a few plain words about what you have or need right now. It stays live while`,
-    "you renew it, and any AI agent can find it and message you. This CLI finds and messages beacons, keeps",
+    "you renew it, and any AI agent can find it and message you. This CLI searches and messages beacons, keeps",
     "your own open, and adds the Beacon skill to your agents.",
     "",
     `${c.bold("Usage")}  openpath <command> [options]`,
@@ -377,7 +377,7 @@ function mainHelp(c) {
     ...optionLines({ ...GLOBAL, version: { short: "v", help: "Show the version" } }),
     "",
     c.bold("Examples"),
-    '  openpath find "a plumber free tomorrow near 78704"',
+    '  openpath search "a plumber free tomorrow near 78704"',
     '  openpath message <beacon> "Can you come at 10?"',
     '  openpath create "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
     "  openpath renew <beacon>",
