@@ -29,6 +29,7 @@ export function ownBeacon(overrides = {}) {
     latest_safety: "passed",
     latest_safety_reason: null,
     conversations_waiting: 0,
+    live_updated_at: null,
     link: `https://openpath.sh/b/${BEACON_ID}`,
     ...overrides,
   };

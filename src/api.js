@@ -31,7 +31,7 @@ export class NotConnected extends Error {
 /**
  * @typedef {{ base: string, token?: string | null, userAgent: string, fetch?: typeof fetch }} ClientOptions
  * @typedef {{ body?: unknown, query?: Record<string, string | number | undefined | null>, auth?: "required" | "optional", accept?: "json" | "markdown", headers?: Record<string, string> }} RequestOptions
- * @typedef {{ text?: string, near?: string }} BeaconInput
+ * @typedef {{ text?: string, location?: string }} BeaconInput
  * @typedef {"accepted" | "booked" | "hired" | "declined" | "spam"} Outcome
  */
 
@@ -96,10 +96,10 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     addDomain: (domain) => request("POST", "/v1/me/domains", { body: { domain }, auth: "required" }),
     /**
      * Beacons that fit a need, found by meaning: Markdown, or JSON when `json` is set. Needs no token.
-     * @param {string} query @param {{ near?: string, offset?: number, json?: boolean }} [options]
+     * @param {string} query @param {{ location?: string, offset?: number, json?: boolean }} [options]
      */
-    find: (query, { near, offset, json = false } = {}) =>
-      request("GET", "/v1/beacons", { query: { q: query, near, offset }, auth: "optional", accept: json ? "json" : "markdown" }),
+    find: (query, { location, offset, json = false } = {}) =>
+      request("GET", "/v1/beacons", { query: { q: query, location, offset }, auth: "optional", accept: json ? "json" : "markdown" }),
     /** One beacon in Markdown, or as JSON when `json` is set. Needs no token. @param {string} beacon @param {{ json?: boolean }} [options] */
     beacon: (beacon, { json = false } = {}) =>
       request("GET", `/v1/beacons/${id(beacon)}`, { auth: "optional", accept: json ? "json" : "markdown" }),
@@ -107,8 +107,13 @@ export function createClient({ base, token = null, userAgent, fetch: send = glob
     myBeacons: () => request("GET", "/v1/me/beacons", { auth: "required" }),
     /** @param {BeaconInput & { text: string }} input @param {string} key the Idempotency-Key: the same key never creates twice */
     create: (input, key) => request("POST", "/v1/beacons", { body: input, auth: "required", headers: { "Idempotency-Key": key } }),
-    /** Keeps a beacon open one more hour, in the last 15 minutes of its hour. @param {string} beacon */
-    renew: (beacon) => request("POST", `/v1/beacons/${id(beacon)}/renew`, { auth: "required" }),
+    /**
+     * Keeps a beacon open one more hour, in the last 15 minutes of its hour. A location as "lat,lng"
+     * shares where it is now, as a live location.
+     * @param {string} beacon @param {string} [location]
+     */
+    renew: (beacon, location) =>
+      request("POST", `/v1/beacons/${id(beacon)}/renew`, { auth: "required", ...(location ? { body: { location } } : {}) }),
     /** @param {string} beacon @param {BeaconInput & { revision: number }} input */
     update: (beacon, input) => request("PUT", `/v1/beacons/${id(beacon)}`, { body: input, auth: "required" }),
     /** Deletes a beacon: gone from search at once, its words erased after 30 days. @param {string} beacon */

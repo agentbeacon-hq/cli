@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { skillName, skillVersion } from "../src/agents.js";
 import { configDir } from "../src/config.js";
 import { detectAgent, olderThan } from "../src/main.js";
-import { clean, wrap } from "../src/output.js";
+import { ago, clean, wrap } from "../src/output.js";
 import { uuidIn } from "../src/refs.js";
 
 test("ids come out of links", () => {
@@ -31,4 +31,13 @@ test("the token is kept under openpath, or where the user says", () => {
     assert.equal(configDir({ XDG_CONFIG_HOME: "/xdg" }, "/home/me"), "/xdg/openpath");
   }
   assert.equal(configDir({ OPENPATH_CONFIG_DIR: "/elsewhere" }, "/home/me"), "/elsewhere");
+});
+
+test("a live location's age reads in seconds, then minutes", () => {
+  const now = new Date("2026-10-22T12:00:00Z");
+  assert.equal(ago("2026-10-22T11:59:52Z", now), "updated 8 seconds ago");
+  assert.equal(ago("2026-10-22T12:00:00Z", now), "updated 1 second ago");
+  assert.equal(ago("2026-10-22T11:59:00Z", now), "updated 1 minute ago");
+  assert.equal(ago("2026-10-22T11:58:01Z", now), "updated 1 minute ago");
+  assert.equal(ago("2026-10-22T11:58:00Z", now), "updated 2 minutes ago");
 });

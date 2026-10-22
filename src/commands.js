@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { agents, chooseAgents, downloadSkill, occupant, removeSkill, SKILL, targets, writeSkill } from "./agents.js";
-import { clean, moment, quoted } from "./output.js";
+import { ago, clean, moment, quoted } from "./output.js";
 import { ApiError } from "./api.js";
 import { uuidIn } from "./refs.js";
 
@@ -68,9 +68,14 @@ function offsetOf(value) {
 
 /** Options a beacon takes when it is created or updated. */
 const beaconOptions = {
-  near: { type: /** @type {const} */ ("string"), hint: "place", help: 'Where: "78704", "East Austin", "lat,lng" or "remote"' },
+  location: { type: /** @type {const} */ ("string"), hint: "place", help: 'Where: "78704", "East Austin", "lat,lng" or "remote"' },
   file: { type: /** @type {const} */ ("string"), short: "f", hint: "file", help: "Use the contents of a text file" },
 };
+
+/** "lat,lng", as a live location is sent. @param {string | undefined} value */
+function isPoint(value) {
+  return /^\s*-?\d{1,3}(\.\d+)?\s*,\s*-?\d{1,3}(\.\d+)?\s*$/.test(value ?? "");
+}
 
 /** The beacon fields from the command's text and options. @param {Context} ctx @param {string[]} words @param {Options} opts @param {boolean} needText */
 async function beaconInput(ctx, words, opts, needText) {
@@ -80,7 +85,7 @@ async function beaconInput(ctx, words, opts, needText) {
   /** @type {import("./api.js").BeaconInput} */
   const input = {};
   if (text) input.text = text;
-  if (opts.near) input.near = opts.near;
+  if (opts.location) input.location = opts.location;
   return input;
 }
 
@@ -110,10 +115,11 @@ export const commands = {
       "Write the need the way you would say it, with the place that matters:",
       '"plumber free tomorrow near 78704", "line cook jobs in Austin".',
       "Read each beacon's words to see whether it fits, and check when it was renewed or",
-      "updated and until when it is open. Results come 10 per page, up to 100. Needs no token.",
+      "updated and until when it is open. A beacon on the move, like a driver, says how far it is",
+      "and about how many minutes away, never where. Results come 10 per page, up to 100. Needs no token.",
     ],
     options: {
-      near: { type: "string", hint: "place", help: 'A place: "78704", "East Austin", "lat,lng" or "remote"' },
+      location: { type: "string", hint: "place", help: 'A place: "78704", "East Austin", "lat,lng" or "remote"' },
       offset: { type: "string", hint: "n", help: "Where the page starts, from 0 to 100 (the page's last line says)" },
     },
     async run(ctx, args, opts) {
@@ -121,7 +127,7 @@ export const commands = {
       if (!query) throw new UsageError('Say what to find, for example: openpath find "a plumber free tomorrow near 78704"');
       if (Array.from(query).length > 300) throw new UsageError("A need can be up to 300 characters.");
       const client = await ctx.client();
-      const options = { near: opts.near, offset: offsetOf(opts.offset) };
+      const options = { location: opts.location, offset: offsetOf(opts.offset) };
       if (ctx.json) return ctx.printJson(await client.find(query, { ...options, json: true }));
       showQuoted(ctx, await client.find(query, options));
       ctx.hint('Read one: openpath show <beacon>   Message it: openpath message <beacon> "your message"');
@@ -151,7 +157,7 @@ export const commands = {
       'what, when, where, price. "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
       "Give it as words, with --file, or on standard input. Leave contact details out:",
       "agents message it through Openpath. Others can find it once it passes the safety check.",
-      'Say where with --near unless the words name a place: a town, a ZIP code, "lat,lng" or "remote".',
+      'Say where with --location unless the words name a place: a town, a ZIP code, "lat,lng" or "remote".',
       "It is open for an hour: renew it in the last 15 minutes of each hour with openpath renew.",
       "Connects this agent to Openpath first if it is not connected yet.",
     ],
@@ -162,8 +168,8 @@ export const commands = {
       // The same beacon sent twice, as a retry would, is created once.
       const key = `cli-${createHash("sha256").update(JSON.stringify(input)).digest("hex").slice(0, 32)}`;
       const created = await client.create(input, key).catch((/** @type {unknown} */ error) => {
-        if (error instanceof ApiError && error.status === 400 && !input.near && /\bnear\b/.test(error.next ?? ""))
-          ctx.hint('Add where it is, for example: --near 78704, --near "East Austin" or --near remote');
+        if (error instanceof ApiError && error.status === 400 && !input.location && /\blocation\b/.test(error.next ?? ""))
+          ctx.hint('Add where it is, for example: --location 78704, --location "East Austin" or --location remote');
         throw error;
       });
       if (ctx.json) return ctx.printJson(created);
@@ -181,10 +187,16 @@ export const commands = {
       "A beacon is open an hour at a time. Renew it in the last 15 minutes of its hour;",
       "earlier, Openpath says when you can. A closed beacon renewed within 24 hours opens",
       "again; after that it is deleted. An update renews it too.",
+      'On the move, --location "lat,lng" also shares where it is now, as update does.',
     ],
-    async run(ctx, args) {
+    options: {
+      location: { type: "string", hint: "lat,lng", help: "Where the beacon is now, as its live location" },
+    },
+    async run(ctx, args, opts) {
       const id = idOf(args[0], "beacon");
-      const { beacon } = await (await ctx.client({ required: true })).renew(id);
+      if (opts.location !== undefined && !isPoint(opts.location))
+        throw new UsageError('renew takes --location only as "lat,lng". Change the beacon\'s place with openpath update.');
+      const { beacon } = await (await ctx.client({ required: true })).renew(id, opts.location);
       if (ctx.json) return ctx.printJson({ beacon });
       ctx.out(ctx.c.green(`Renewed. Open until ${moment(beacon.until)}.`));
       ctx.hint(`Renew it again from ${moment(beacon.renew_from)}.`);
@@ -217,11 +229,12 @@ export const commands = {
               ? c.yellow(`latest words refused${beacon.latest_safety_reason ? `: ${clean(beacon.latest_safety_reason)}` : ""}`)
               : c.dim("latest words wait for their safety check");
         const shown = beacon.shown_revision === null ? c.dim(" · nobody can find it yet") : "";
+        const live = beacon.live_updated_at ? c.blue(` · live location, ${ago(beacon.live_updated_at)}`) : "";
         const waiting = beacon.conversations_waiting
           ? c.blue(` · ${beacon.conversations_waiting} ${beacon.conversations_waiting === 1 ? "conversation" : "conversations"} waiting`)
           : "";
         for (const line of quoted(beacon.latest_text, c, ctx.width)) ctx.out(line);
-        ctx.out(`  ${state}${shown}${waiting}${c.dim(` · revision ${beacon.latest_revision}`)}`);
+        ctx.out(`  ${state}${shown}${live}${waiting}${c.dim(` · revision ${beacon.latest_revision}`)}`);
         ctx.out(`  ${c.dim(clean(beacon.id))}`);
         ctx.out();
       }
@@ -233,19 +246,31 @@ export const commands = {
     usage: "update <beacon> [text]",
     summary: "Rewrite a beacon when anything changes",
     about: [
-      "Give new words, a new --near, or both. Rewrite it as often as needed.",
+      "Give new words, a new --location, or both. Rewrite it as often as needed.",
       "The shown words stay until the new ones pass their safety check. An update renews it too.",
+      'On the move, like a driver, send only --location "lat,lng" every few seconds, at most once',
+      "every 3 seconds, while the beacon is open: its live location. It makes no new revision and",
+      "needs no safety check. Others see only how far it is and about how many minutes away.",
+      'For example: while true; do openpath update <beacon> --location "$LAT,$LNG"; sleep 5; done',
     ],
-    options: { ...beaconOptions },
+    options: {
+      ...beaconOptions,
+      location: { type: "string", hint: "place", help: 'Where: "78704", "East Austin", "lat,lng" or "remote"; alone as "lat,lng", the live location' },
+    },
     async run(ctx, args, opts) {
       const id = idOf(args[0], "beacon");
       const input = await beaconInput(ctx, args.slice(1), opts, false);
-      if (!Object.keys(input).length) throw new UsageError("Say what changes: new words or --near.");
+      if (!Object.keys(input).length) throw new UsageError("Say what changes: new words or --location.");
       const client = await ctx.client({ required: true });
       const current = (await client.myBeacons()).beacons.find((/** @type {any} */ b) => b.id === id);
       if (!current) throw new Error(`This agent has no beacon ${id}. See yours with: openpath beacons`);
       const changed = await client.update(id, { ...input, revision: current.latest_revision });
       if (ctx.json) return ctx.printJson(changed);
+      if (input.text === undefined && isPoint(input.location)) {
+        ctx.out(ctx.c.green("Live location kept. Others see how far it is and about how many minutes away, never where."));
+        ctx.hint("Send it again in a few seconds, at most once every 3 seconds.");
+        return;
+      }
       ctx.out(ctx.c.green(`Updated. Revision ${changed.revision} shows once it passes its safety check.`));
     },
   },

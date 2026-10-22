@@ -13,11 +13,11 @@ const TIME = String.raw`\d{1,2} Oct \d\d:\d\d`;
 
 test("find needs no connection, sends no category or side, and shows the Markdown as it reads", async () => {
   const api = fakeApi({ "GET /v1/beacons": () => [200, PAGE] });
-  const { code, out } = await run(["find", "plumber", "free", "tomorrow", "--near", "78704", "--offset", "10"], { fetch: api.fetch });
+  const { code, out } = await run(["find", "plumber", "free", "tomorrow", "--location", "78704", "--offset", "10"], { fetch: api.fetch });
   assert.equal(code, 0);
   assert.equal(api.requests.length, 1);
   const find = api.requests[0];
-  assert.deepEqual(Object.fromEntries(find.url.searchParams), { q: "plumber free tomorrow", near: "78704", offset: "10" });
+  assert.deepEqual(Object.fromEntries(find.url.searchParams), { q: "plumber free tomorrow", location: "78704", offset: "10" });
   assert.equal(find.headers.accept, "text/markdown");
   assert.equal(find.headers.authorization, undefined);
   assert.match(out, /│ # Beacons for "plumber free tomorrow"/);
@@ -50,15 +50,15 @@ test("a beacon cannot send control characters to the terminal", async () => {
 
 test("create connects first with no body, saves the token privately, and creates the beacon once", async () => {
   const api = fakeApi({ ...connected, "POST /v1/beacons": () => [201, { beacon: ownBeacon({ latest_safety: "pending" }), revision: 1, safety: "pending" }] });
-  const words = ["create", "Free tomorrow 9–12 for leaks and clogs, from $95.", "--near", "78704"];
+  const words = ["create", "Free tomorrow 9–12 for leaks and clogs, from $95.", "--location", "78704"];
   const { code, out, err, home } = await run(words, { fetch: api.fetch, env: { CLAUDECODE: "1" } });
   assert.equal(code, 0, err);
   assert.equal(api.requests[0].url.pathname, "/v1/connect");
   assert.equal(api.requests[0].body, undefined);
-  assert.match(api.requests[0].headers["user-agent"], /^claude-code openpath-cli\/1\.0\.0/);
+  assert.match(api.requests[0].headers["user-agent"], /^claude-code openpath-cli\/1\.0\.1/);
   const sent = api.requests[1];
   assert.equal(sent.headers.authorization, "Bearer agt_test");
-  assert.deepEqual(sent.body, { text: "Free tomorrow 9–12 for leaks and clogs, from $95.", near: "78704" });
+  assert.deepEqual(sent.body, { text: "Free tomorrow 9–12 for leaks and clogs, from $95.", location: "78704" });
   assert.match(sent.headers["idempotency-key"], /^cli-[0-9a-f]{32}$/);
   assert.match(out, /Created\./);
   assert.match(out, new RegExp(`Open until ${TIME}\\. Renew it from ${TIME}: openpath renew ${BEACON_ID}`));
@@ -85,13 +85,13 @@ test("create refuses an empty or too-long beacon, and the old --until, before an
   assert.deepEqual(api.requests[0].body, { text: "Gutter cleaning this week, East Austin." });
 });
 
-test("create without a place shows the API's refusal and points at --near", async () => {
-  const next = 'Send near: a town or ZIP code ("78704"), "lat,lng", or "remote" when it applies anywhere.';
+test("create without a place shows the API's refusal and points at --location", async () => {
+  const next = 'Send location: a town or ZIP code ("78704"), "lat,lng", or "remote" when it applies anywhere.';
   const api = fakeApi({ "POST /v1/beacons": () => [400, { status: 400, code: "bad_request", detail: "Say where this beacon is.", next }] });
   const { code, out, err } = await run(["create", "Gutter cleaning this week."], { fetch: api.fetch, env });
   assert.equal(code, 1);
   assert.match(err, /Say where this beacon is\. \(400 bad_request\)/);
-  assert.match(out, /--near 78704/);
+  assert.match(out, /--location 78704/);
 });
 
 test("beacons shows when each is open and when to renew it, and update sends the latest revision", async () => {
@@ -137,6 +137,71 @@ test("renew keeps a beacon open, and too early shows when it can be renewed", as
   const tooEarly = await run(["renew", BEACON_ID], { fetch: api.fetch, env });
   assert.equal(tooEarly.code, 1);
   assert.match(tooEarly.err, /\(409 too_early\)\n.*Renew it from 14:05 CDT/);
+});
+
+test("--near is gone: find, create and update take --location", async () => {
+  const api = fakeApi({ "GET /v1/beacons": () => [200, PAGE] });
+  for (const argv of [["find", "movers", "--near", "78704"], ["create", "Free tomorrow", "--near", "78704"], ["update", BEACON_ID, "--near", "78704"]]) {
+    const { code } = await run(argv, { fetch: api.fetch, env });
+    assert.equal(code, 2);
+  }
+  assert.equal(api.requests.length, 0);
+});
+
+test("update with only --location lat,lng keeps a live location, and renew can carry one", async () => {
+  const api = fakeApi({
+    "GET /v1/me/beacons": () => [200, { beacons: [ownBeacon()] }],
+    [`PUT /v1/beacons/${BEACON_ID}`]: () => [200, { beacon: ownBeacon({ live_updated_at: new Date().toISOString() }), revision: 3, safety: "passed" }],
+    [`POST /v1/beacons/${BEACON_ID}/renew`]: () => [200, { beacon: ownBeacon() }],
+  });
+  const live = await run(["update", BEACON_ID, "--location", "30.2672,-97.7431"], { fetch: api.fetch, env });
+  assert.equal(live.code, 0, live.err);
+  assert.deepEqual(api.requests.at(-1)?.body, { location: "30.2672,-97.7431", revision: 3 });
+  assert.match(live.out, /Live location kept\. Others see how far it is and about how many minutes away, never where\./);
+  assert.match(live.out, /Send it again in a few seconds, at most once every 3 seconds\./);
+  const moved = await run(["update", BEACON_ID, "--location", "East Austin"], { fetch: api.fetch, env });
+  assert.deepEqual(api.requests.at(-1)?.body, { location: "East Austin", revision: 3 });
+  assert.match(moved.out, /Revision 3 shows once it passes its safety check/);
+  const renewed = await run(["renew", BEACON_ID, "--location", "30.27,-97.74"], { fetch: api.fetch, env });
+  assert.equal(renewed.code, 0, renewed.err);
+  assert.deepEqual(api.requests.at(-1)?.body, { location: "30.27,-97.74" });
+  const sent = api.requests.length;
+  const place = await run(["renew", BEACON_ID, "--location", "East Austin"], { fetch: api.fetch, env });
+  assert.equal(place.code, 2);
+  assert.equal(api.requests.length, sent);
+});
+
+test("a live location sent sooner than 3 seconds says how long to wait", async () => {
+  const api = fakeApi({
+    "GET /v1/me/beacons": () => [200, { beacons: [ownBeacon()] }],
+    [`PUT /v1/beacons/${BEACON_ID}`]: () => [
+      429,
+      { status: 429, code: "rate_limited", detail: "This beacon’s location was updated less than 3 seconds ago.", next: "Send its location at most once every 3 seconds." },
+      { "Retry-After": "2" },
+    ],
+  });
+  const { code, err } = await run(["update", BEACON_ID, "--location", "30.2672,-97.7431"], { fetch: api.fetch, env });
+  assert.equal(code, 1);
+  assert.match(err, /\(429 rate_limited\)/);
+  assert.match(err, /Try again in 2 seconds\./);
+});
+
+test("beacons says when its live location was last sent, and find and show show how far a moving beacon is", async () => {
+  const api = fakeApi({
+    "GET /v1/me/beacons": () => [
+      200,
+      { beacons: [ownBeacon({ live_updated_at: new Date(Date.now() - 8000).toISOString() }), ownBeacon({ id: CONVERSATION_ID })] },
+    ],
+    "GET /v1/beacons": () => [200, `${PAGE}Live location, updated 8 seconds ago · 2.1 miles away, about 6 minutes\n`],
+    [`GET /v1/beacons/${BEACON_ID}`]: () => [200, `${beaconMarkdown()}Live location, updated 8 seconds ago\n`],
+  });
+  const listed = await run(["beacons"], { fetch: api.fetch, env });
+  assert.match(listed.out, /open until .* · live location, updated \d+ seconds ago · revision 3\n  76a21240/);
+  assert.equal(listed.out.match(/live location/g)?.length, 1);
+  const found = await run(["find", "ride", "to", "the", "airport", "--location", "78704"], { fetch: api.fetch });
+  assert.match(found.out, /│ Live location, updated 8 seconds ago · 2\.1 miles away, about 6 minutes/);
+  const shown = await run(["show", BEACON_ID], { fetch: api.fetch });
+  assert.match(shown.out, /│ Live location, updated 8 seconds ago/);
 });
 
 test("delete asks first, refuses to guess without a terminal, and sends DELETE", async () => {
