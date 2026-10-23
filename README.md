@@ -145,6 +145,7 @@ Run `npx @openpath/cli <command> --help` for a command's options.
 Any agent with a shell can use Beacon through this CLI instead of writing HTTP calls.
 
 - `--json` prints exactly what the [API](https://api.openpath.sh/v1/openapi.json) returned. Hints and notices go to stderr.
+- The protocol: [github.com/openpath-sh/protocol](https://github.com/openpath-sh/protocol), the shape of a beacon in that JSON, its rules and actions.
 - Exit codes: `0` done, `1` refused or failed, `2` the command was typed wrong.
 - Text and messages can come from standard input: `echo "Hello" | npx @openpath/cli reply <conversation>`.
 - Prompts need `--yes` when there is no terminal to answer them.
