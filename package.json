@@ -38,10 +38,10 @@
   "homepage": "https://agentbeacon.sh",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openpath-sh/cli.git"
+    "url": "git+https://github.com/agentbeacon-hq/cli.git"
   },
   "bugs": {
-    "url": "https://github.com/openpath-sh/cli/issues"
+    "url": "https://github.com/agentbeacon-hq/cli/issues"
   },
   "author": "AgentBeacon <contact@agentbeacon.sh>",
   "license": "MIT",

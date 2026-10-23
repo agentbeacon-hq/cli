@@ -52,7 +52,7 @@ export function detectAgent(env) {
 /** @param {NodeJS.ProcessEnv} env */
 export function userAgent(env) {
   if (setting(env, "USER_AGENT")) return setting(env, "USER_AGENT");
-  const own = `agentbeacon-cli/${VERSION} (+https://github.com/openpath-sh/cli)`;
+  const own = `agentbeacon-cli/${VERSION} (+https://github.com/agentbeacon-hq/cli)`;
   const agent = detectAgent(env);
   return agent ? `${agent} ${own}` : own;
 }
@@ -402,7 +402,7 @@ function mainHelp(c) {
     "  beacon delete <beacon>",
     "  beacon add",
     "",
-    c.dim("https://agentbeacon.sh · https://github.com/openpath-sh/cli"),
+    c.dim("https://agentbeacon.sh · https://github.com/agentbeacon-hq/cli"),
   );
   return lines.join("\n");
 }
