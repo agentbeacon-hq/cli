@@ -22,7 +22,7 @@ const ALIASES = /** @type {Record<string, string>} */ ({
 const GLOBAL = {
   json: { type: /** @type {const} */ ("boolean"), help: "Print the API's JSON, for scripts and agents" },
   yes: { type: /** @type {const} */ ("boolean"), short: "y", help: "Answer yes to every prompt" },
-  api: { type: /** @type {const} */ ("string"), hint: "url", help: `Use another Beacon API (default ${DEFAULT_API})` },
+  api: { type: /** @type {const} */ ("string"), hint: "url", help: `Use another AgentBeacon API (default ${DEFAULT_API})` },
   help: { type: /** @type {const} */ ("boolean"), short: "h", help: "Show help" },
 };
 
@@ -31,7 +31,7 @@ class Cancelled extends Error {}
 
 /**
  * The agent running this CLI, if one is, from the variables agents set.
- * It leads the User-Agent so Beacon can see which agents turn up.
+ * It leads the User-Agent so AgentBeacon can see which agents turn up.
  * @param {NodeJS.ProcessEnv} env
  */
 export function detectAgent(env) {
@@ -52,7 +52,7 @@ export function detectAgent(env) {
 /** @param {NodeJS.ProcessEnv} env */
 export function userAgent(env) {
   if (setting(env, "USER_AGENT")) return setting(env, "USER_AGENT");
-  const own = `openpath-cli/${VERSION} (+https://github.com/openpath-sh/cli)`;
+  const own = `agentbeacon-cli/${VERSION} (+https://github.com/openpath-sh/cli)`;
   const agent = detectAgent(env);
   return agent ? `${agent} ${own}` : own;
 }
@@ -98,7 +98,7 @@ export async function main(argv, io = {}) {
   if (!commandName) {
     const near = nearest(name, [...Object.keys(commands), ...Object.keys(ALIASES)]);
     write(stderr, `${c.red(`Unknown command "${clean(name)}".`)}${near ? ` Did you mean ${c.bold(near)}?` : ""}`);
-    write(stderr, c.dim("See every command with: openpath --help"));
+    write(stderr, c.dim("See every command with: beacon --help"));
     return 2;
   }
   const command = commands[commandName];
@@ -110,7 +110,7 @@ export async function main(argv, io = {}) {
     parsed = parseArgs({ args: negativeValues(rest, options), options, allowPositionals: true, strict: true });
   } catch (error) {
     write(stderr, c.red(/** @type {Error} */ (error).message.replace(/\. To specify a positional.*$/s, ".")));
-    write(stderr, c.dim(`See: openpath ${commandName} --help`));
+    write(stderr, c.dim(`See: beacon ${commandName} --help`));
     return 2;
   }
   const { values: opts, positionals: args } = parsed;
@@ -130,7 +130,7 @@ export async function main(argv, io = {}) {
 
   const credentials = async () => {
     const fromEnv = setting(env, "TOKEN");
-    if (fromEnv) return { token: fromEnv, agent_id: null, source: "OPENPATH_TOKEN" };
+    if (fromEnv) return { token: fromEnv, agent_id: null, source: "AGENTBEACON_TOKEN" };
     const saved = await loadCredentials(file, api);
     return saved ? { ...saved, source: tilde(file) } : null;
   };
@@ -189,7 +189,7 @@ export async function main(argv, io = {}) {
       tokenSource = tilde(file);
       client = null;
       const say = primary && !ctx.json ? ctx.out : (/** @type {string} */ line) => write(stderr, line);
-      say(c.green(`Connected this agent to Beacon. Agent ${clean(result.agent_id)}.`));
+      say(c.green(`Connected this agent to AgentBeacon. Agent ${clean(result.agent_id)}.`));
       say(c.dim(`The token is saved in ${tilde(file)}, readable only by you.`));
       return result;
     },
@@ -285,12 +285,12 @@ function report(ctx, stderr, error, command) {
   }
   if (error instanceof UsageError) {
     say(c.red(error.message));
-    say(c.dim(`See: openpath ${command} --help`));
+    say(c.dim(`See: beacon ${command} --help`));
     return 2;
   }
   if (error instanceof NotConnected) {
     say(c.red(error.message));
-    say("Run openpath connect, or create a beacon with openpath create, which connects on the way.");
+    say("Run beacon connect, or create a beacon with beacon create, which connects on the way.");
     return 1;
   }
   if (error instanceof ApiError) {
@@ -300,10 +300,10 @@ function report(ctx, stderr, error, command) {
     // What the API says to do next, except for a token it refused: the CLI says that its own way.
     if (error.next && error.status !== 401) say(clean(error.next));
     if (error.status === 401) {
-      say(`Beacon did not accept the token from ${ctx.tokenSource ?? "this machine"}. If it was revoked, its owner can check on the account page.`);
+      say(`AgentBeacon did not accept the token from ${ctx.tokenSource ?? "this machine"}. If it was revoked, its owner can check on the account page.`);
       say(c.dim("Connecting again would make a separate account, so it is not a fix."));
     } else if (error.code === "account_not_linked") {
-      say("Someone has to sign in to this account first. The link is in: openpath me");
+      say("Someone has to sign in to this account first. The link is in: beacon me");
     }
     if (error.retryAfter) {
       const seconds = Number(error.retryAfter);
@@ -328,7 +328,7 @@ async function noteNewerSkill(ctx, current) {
   for (const { dir } of plan) {
     const here = await occupant(dir).catch(() => null);
     if (here?.kind === "ours" && here.version && outOfDate(here.version, current)) {
-      ctx.hint(`A newer Beacon skill is out (${clean(current)}). Update your agents with: openpath add`);
+      ctx.hint(`A newer AgentBeacon skill is out (${clean(current)}). Update your agents with: beacon add`);
       return;
     }
   }
@@ -379,11 +379,11 @@ function mainHelp(c) {
   for (const command of Object.values(commands)) (groups[command.group] ??= []).push([command.usage, command.summary]);
   const width = Math.max(...Object.values(commands).map((command) => command.usage.length)) + 3;
   const lines = [
-    `${c.bold("Beacon")}. Create a beacon: a few plain words about what you have or need right now. It stays live while`,
+    `${c.bold("AgentBeacon")}. Create a beacon: a few plain words about what you have or need right now. It stays live while`,
     "you renew it, and any AI agent can find it and message you. This CLI searches and messages beacons, keeps",
-    "your own open, and adds the Beacon skill to your agents.",
+    "your own open, and adds the AgentBeacon skill to your agents.",
     "",
-    `${c.bold("Usage")}  openpath <command> [options]`,
+    `${c.bold("Usage")}  beacon <command> [options]`,
   ];
   for (const [group, rows] of Object.entries(groups)) {
     lines.push("", c.bold(group));
@@ -395,14 +395,14 @@ function mainHelp(c) {
     ...optionLines({ ...GLOBAL, version: { short: "v", help: "Show the version" } }),
     "",
     c.bold("Examples"),
-    '  openpath search "a plumber free tomorrow near 78704"',
-    '  openpath message <beacon> "Can you come at 10?"',
-    '  openpath create "Free tomorrow 9–12 for leaks and clogs near 78704, from $95." --lat 30.2416 --lng -97.7695',
-    "  openpath renew <beacon>",
-    "  openpath delete <beacon>",
-    "  openpath add",
+    '  beacon search "a plumber free tomorrow near 78704"',
+    '  beacon message <beacon> "Can you come at 10?"',
+    '  beacon create "Free tomorrow 9–12 for leaks and clogs near 78704, from $95." --lat 30.2416 --lng -97.7695',
+    "  beacon renew <beacon>",
+    "  beacon delete <beacon>",
+    "  beacon add",
     "",
-    c.dim("https://openpath.sh · https://github.com/openpath-sh/cli"),
+    c.dim("https://agentbeacon.sh · https://github.com/openpath-sh/cli"),
   );
   return lines.join("\n");
 }
@@ -410,7 +410,7 @@ function mainHelp(c) {
 /** @param {string} name @param {import("./output.js").Palette} c */
 function commandHelp(name, c) {
   const command = commands[name];
-  const lines = [`${c.bold("Usage")}  openpath ${command.usage} [options]`, "", `${command.summary}.`];
+  const lines = [`${c.bold("Usage")}  beacon ${command.usage} [options]`, "", `${command.summary}.`];
   if (command.about?.length) lines.push("", ...command.about);
   lines.push("", c.bold("Options"), ...optionLines({ ...(command.options ?? {}), ...GLOBAL }));
   return lines.join("\n");

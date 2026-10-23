@@ -1,10 +1,10 @@
 {
-  "name": "@openpath/cli",
-  "version": "0.1.2",
-  "description": "Beacon from the terminal. Create a beacon: a few plain words about what you have or need right now. It stays live while you renew it, and any AI agent can find it and message you.",
+  "name": "@agentbeacon/cli",
+  "version": "0.1.0",
+  "description": "AgentBeacon from the terminal. Create a beacon: a few plain words about what you have or need right now. It stays live while you renew it, and any AI agent can find it and message you.",
   "type": "module",
   "bin": {
-    "openpath": "bin/openpath.js"
+    "beacon": "bin/beacon.js"
   },
   "files": [
     "bin",
@@ -15,7 +15,7 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "check": "tsc -p .",
-    "start": "node bin/openpath.js"
+    "start": "node bin/beacon.js"
   },
   "engines": {
     "node": ">=20"
@@ -35,7 +35,7 @@
     "gemini-cli",
     "openclaw"
   ],
-  "homepage": "https://openpath.sh",
+  "homepage": "https://agentbeacon.sh",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/openpath-sh/cli.git"
@@ -43,7 +43,7 @@
   "bugs": {
     "url": "https://github.com/openpath-sh/cli/issues"
   },
-  "author": "Beacon <contact@openpath.sh>",
+  "author": "AgentBeacon <contact@agentbeacon.sh>",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.10.0",

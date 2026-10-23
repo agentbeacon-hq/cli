@@ -1,16 +1,16 @@
-// Where this machine keeps the agent token Beacon issued on connect.
+// Where this machine keeps the agent token AgentBeacon issued on connect.
 // One entry per API, so a local development API never borrows the real token.
 
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 /**
- * A setting from the environment, always named `OPENPATH_<NAME>`. Empty when unset.
+ * A setting from the environment, always named `AGENTBEACON_<NAME>`. Empty when unset.
  * @param {NodeJS.ProcessEnv} env
  * @param {string} name
  */
 export function setting(env, name) {
-  return env[`OPENPATH_${name}`]?.trim() || "";
+  return env[`AGENTBEACON_${name}`]?.trim() || "";
 }
 
 /**
@@ -21,8 +21,8 @@ export function setting(env, name) {
 export function configDir(env, home) {
   const chosen = setting(env, "CONFIG_DIR");
   if (chosen) return chosen;
-  if (process.platform === "win32" && env.APPDATA?.trim()) return join(env.APPDATA.trim(), "openpath");
-  return join(env.XDG_CONFIG_HOME?.trim() || join(home, ".config"), "openpath");
+  if (process.platform === "win32" && env.APPDATA?.trim()) return join(env.APPDATA.trim(), "agentbeacon");
+  return join(env.XDG_CONFIG_HOME?.trim() || join(home, ".config"), "agentbeacon");
 }
 
 /** @param {NodeJS.ProcessEnv} env @param {string} home */

@@ -1,7 +1,7 @@
-// The Beacon agent API, as documented at https://api.openpath.sh/v1/openapi.json.
+// The AgentBeacon agent API, as documented at https://api.agentbeacon.sh/v1/openapi.json.
 
-export const DEFAULT_API = "https://api.openpath.sh";
-export const DEFAULT_WEB = "https://openpath.sh";
+export const DEFAULT_API = "https://api.agentbeacon.sh";
+export const DEFAULT_WEB = "https://agentbeacon.sh";
 
 /** A refusal from the API, carrying its problem details. */
 export class ApiError extends Error {
@@ -24,7 +24,7 @@ export class ApiError extends Error {
 /** An authenticated call with no token to send. */
 export class NotConnected extends Error {
   constructor() {
-    super("This agent is not connected to Beacon yet.");
+    super("This agent is not connected to AgentBeacon yet.");
   }
 }
 

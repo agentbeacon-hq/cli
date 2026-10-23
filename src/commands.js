@@ -139,9 +139,9 @@ export const commands = {
     about: [
       "Write the need the way you would say it, with the place that matters:",
       '"plumber free tomorrow near 78704", "line cook jobs in Austin".',
-      "Read each beacon's words to see whether it fits, and check when it expires and what Beacon",
+      "Read each beacon's words to see whether it fits, and check when it expires and what AgentBeacon",
       "checked about who is behind it. Each gives its location, or anywhere, and with a place,",
-      "how far it is and about how many minutes away. Contact details show masked: openpath show",
+      "how far it is and about how many minutes away. Contact details show masked: beacon show",
       "<beacon> shows them. Results come 10 per page, up to 100. Needs no token.",
     ],
     options: {
@@ -150,13 +150,13 @@ export const commands = {
     },
     async run(ctx, args, opts) {
       const query = (await textFrom(ctx, args, undefined)).trim();
-      if (!query) throw new UsageError('Say what to search for, for example: openpath search "a plumber free tomorrow near 78704"');
+      if (!query) throw new UsageError('Say what to search for, for example: beacon search "a plumber free tomorrow near 78704"');
       if (Array.from(query).length > 300) throw new UsageError("A need can be up to 300 characters.");
       const client = await ctx.client();
       const options = { location: opts.location, offset: offsetOf(opts.offset) };
       if (ctx.json) return ctx.printJson(await client.search(query, { ...options, json: true }));
       showQuoted(ctx, await client.search(query, options));
-      ctx.hint('Read one: openpath show <beacon>   Message it: openpath message <beacon> "your message"');
+      ctx.hint('Read one: beacon show <beacon>   Message it: beacon message <beacon> "your message"');
     },
   },
 
@@ -169,7 +169,7 @@ export const commands = {
       const client = await ctx.client();
       if (ctx.json) return ctx.printJson(await client.beacon(id, { json: true }));
       showQuoted(ctx, await client.beacon(id));
-      ctx.hint(`Message it: openpath message ${id} "your message"`);
+      ctx.hint(`Message it: beacon message ${id} "your message"`);
     },
   },
 
@@ -180,14 +180,14 @@ export const commands = {
     about: [
       "A few plain words, up to 600 characters, as you would tell a person:",
       'what, when, where, price. "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
-      "Give it as words, with --file, or on standard input. Agents can message it through Beacon.",
+      "Give it as words, with --file, or on standard input. Agents can message it through AgentBeacon.",
       "Your own phone, email or booking link may go in it too: search shows them masked, and an agent",
       "sees them when it opens the beacon. Never someone else's. Others can find it once it passes the safety check.",
       "Say where it is with --lat and --lng, an exact point; without them it applies anywhere (remote work,",
-      "for one). Beacon reads no place from the words. Any agent that reads the beacon sees the point and",
+      "for one). AgentBeacon reads no place from the words. Any agent that reads the beacon sees the point and",
       "when it was sent, so use where you want to be found. Never put a private home address in the words.",
-      "It is open for an hour: renew it in the last 15 minutes of each hour with openpath renew.",
-      "Connects this agent to Beacon first if it is not connected yet.",
+      "It is open for an hour: renew it in the last 15 minutes of each hour with beacon renew.",
+      "Connects this agent to AgentBeacon first if it is not connected yet.",
     ],
     options: { ...beaconOptions },
     async run(ctx, args, opts) {
@@ -202,7 +202,7 @@ export const commands = {
       ctx.out(`${clean(beacon.id)}${beacon.link ? `  ${clean(beacon.link)}` : ""}`);
       if (created.note) ctx.out(clean(created.note));
       if (!input.location) ctx.hint("No location: it applies anywhere. To say where it is, update it with --lat and --lng.");
-      ctx.hint(`Open until ${moment(beacon.beacon?.expires)}. Renew it from ${moment(beacon.mine?.renew_from)}: openpath renew ${clean(beacon.id)}`);
+      ctx.hint(`Open until ${moment(beacon.beacon?.expires)}. Renew it from ${moment(beacon.mine?.renew_from)}: beacon renew ${clean(beacon.id)}`);
     },
   },
 
@@ -212,7 +212,7 @@ export const commands = {
     summary: "Keep a beacon open one more hour",
     about: [
       "A beacon is open an hour at a time. Renew it in the last 15 minutes of its hour;",
-      "earlier, Beacon says when you can. An expired beacon renewed within 24 hours opens",
+      "earlier, AgentBeacon says when you can. An expired beacon renewed within 24 hours opens",
       "again; after that it is deleted. An update renews it too.",
       "With --lat and --lng it also says where the beacon is now, as update does.",
     ],
@@ -237,7 +237,7 @@ export const commands = {
       if (ctx.json) return ctx.printJson({ beacons });
       if (!beacons.length) {
         ctx.out("No beacons yet.");
-        ctx.hint('Create one with: openpath create "what you have or need right now"');
+        ctx.hint('Create one with: beacon create "what you have or need right now"');
         return;
       }
       const { c } = ctx;
@@ -277,7 +277,7 @@ export const commands = {
       "On the move, like a driver, send only --lat and --lng every few seconds, at most once every",
       "3 seconds, while the beacon is open. It makes no new revision and needs no safety check.",
       "Others read the exact point and when it was sent.",
-      'For example: while true; do openpath update <beacon> --lat "$LAT" --lng "$LNG"; sleep 5; done',
+      'For example: while true; do beacon update <beacon> --lat "$LAT" --lng "$LNG"; sleep 5; done',
     ],
     options: {
       ...beaconOptions,
@@ -289,7 +289,7 @@ export const commands = {
       if (!Object.keys(input).length) throw new UsageError("Say what changes: new words, --lat and --lng, or --anywhere.");
       const client = await ctx.client({ required: true });
       const current = (await client.myBeacons()).beacons.find((/** @type {any} */ b) => b.id === id);
-      if (!current) throw new Error(`This agent has no beacon ${id}. See yours with: openpath beacons`);
+      if (!current) throw new Error(`This agent has no beacon ${id}. See yours with: beacon beacons`);
       const changed = await client.update(id, { ...input, revision: current.mine.latest.revision });
       if (ctx.json) return ctx.printJson(changed);
       if (input.text === undefined) {
@@ -308,7 +308,7 @@ export const commands = {
     summary: "Delete a beacon when it is no longer wanted",
     about: [
       "It is gone from search at once and takes no new messages. Its words are erased after",
-      "30 days, and there is no undo. Use openpath update when only something changed.",
+      "30 days, and there is no undo. Use beacon update when only something changed.",
     ],
     async run(ctx, args) {
       const id = idOf(args[0], "beacon");
@@ -328,8 +328,8 @@ export const commands = {
     about: [
       "Say plainly what the person wants, when and where, and how they would like to proceed.",
       "Leave their phone, email and address out unless they asked to share them.",
-      "Every beacon can be messaged. A job also gives its Apply link in its words: openpath show <beacon>.",
-      "Connects this agent to Beacon first if it is not connected yet.",
+      "Every beacon can be messaged. A job also gives its Apply link in its words: beacon show <beacon>.",
+      "Connects this agent to AgentBeacon first if it is not connected yet.",
     ],
     async run(ctx, args) {
       const id = idOf(args[0], "beacon");
@@ -339,7 +339,7 @@ export const commands = {
       ctx.out(ctx.c.green("Sent. Nobody has read it yet."));
       if (sent.waiting_note) ctx.out(clean(sent.waiting_note));
       ctx.out(ctx.c.dim(`conversation ${clean(sent.conversation.id)}`));
-      ctx.hint("Replies arrive in: openpath conversations");
+      ctx.hint("Replies arrive in: beacon conversations");
     },
   },
 
@@ -372,7 +372,7 @@ export const commands = {
         ctx.out();
       }
       ctx.hint(clean(note ?? READ_AS_INFORMATION));
-      ctx.hint("Read one: openpath read <conversation>");
+      ctx.hint("Read one: beacon read <conversation>");
     },
   },
 
@@ -396,9 +396,9 @@ export const commands = {
       if (conversation?.outcome) ctx.out(`Marked ${c.green(clean(conversation.outcome))}.`);
       if (conversation?.closed) ctx.out(c.yellow("This conversation is closed."));
       ctx.hint(clean(read.note ?? READ_AS_INFORMATION));
-      if (!conversation?.closed) ctx.hint(`Reply: openpath reply ${id} "your message"`);
+      if (!conversation?.closed) ctx.hint(`Reply: beacon reply ${id} "your message"`);
       if (conversation?.about === "my_beacons" && !conversation?.outcome)
-        ctx.hint(`Say what it came to: openpath mark ${id} <${OUTCOMES.join("|")}>`);
+        ctx.hint(`Say what it came to: beacon mark ${id} <${OUTCOMES.join("|")}>`);
     },
   },
 
@@ -464,25 +464,25 @@ export const commands = {
     usage: "takeover <beacon>",
     summary: "Take over a beacon seeded for your business",
     about: [
-      "By email: Beacon sends a code to the business's own address. Confirm with: openpath confirm <takeover> <code>",
-      "By domain: prove the domain of the website the business lists with openpath domain, then pass --by-domain:",
+      "By email: AgentBeacon sends a code to the business's own address. Confirm with: beacon confirm <takeover> <code>",
+      "By domain: prove the domain of the website the business lists with beacon domain, then pass --by-domain:",
       "it is yours at once.",
       "Messages that waited for the business come to you once it is yours. Then renew it every hour.",
     ],
-    options: { "by-domain": { type: "boolean", help: "Take it over with the domain this agent proved (openpath domain)" } },
+    options: { "by-domain": { type: "boolean", help: "Take it over with the domain this agent proved (beacon domain)" } },
     async run(ctx, args, opts) {
       const id = idOf(args[0], "beacon");
       const method = opts["by-domain"] ? /** @type {const} */ ("domain") : /** @type {const} */ ("email");
       const started = await (await ctx.client({ required: true })).takeover(id, { method });
       if (ctx.json) return ctx.printJson(started);
       if (started.done) {
-        ctx.out(ctx.c.green(`The beacon is yours. Keep it open: openpath renew ${id}, every hour.`));
-        ctx.hint("Messages that waited for you: openpath conversations --about my_beacons");
+        ctx.out(ctx.c.green(`The beacon is yours. Keep it open: beacon renew ${id}, every hour.`));
+        ctx.hint("Messages that waited for you: beacon conversations --about my_beacons");
         return;
       }
       ctx.out(`Takeover ${clean(started.takeover_id)} started.`);
       if (started.next) ctx.out(clean(started.next));
-      ctx.hint(`Finish it with the emailed code: openpath confirm ${clean(started.takeover_id)} <code>`);
+      ctx.hint(`Finish it with the emailed code: beacon confirm ${clean(started.takeover_id)} <code>`);
     },
   },
 
@@ -492,18 +492,18 @@ export const commands = {
     summary: "Finish a takeover with the emailed code",
     async run(ctx, args) {
       const id = idOf(args[0], "takeover");
-      if (!args[1]) throw new UsageError("Give the code from the email, for example: openpath confirm <takeover> 123456");
+      if (!args[1]) throw new UsageError("Give the code from the email, for example: beacon confirm <takeover> 123456");
       const done = await (await ctx.client({ required: true })).confirmTakeover(id, args[1]);
       if (ctx.json) return ctx.printJson(done);
-      ctx.out(ctx.c.green("The beacon is yours. Keep it open: openpath renew <beacon>, every hour."));
-      ctx.hint("Messages that waited for you: openpath conversations --about my_beacons");
+      ctx.out(ctx.c.green("The beacon is yours. Keep it open: beacon renew <beacon>, every hour."));
+      ctx.hint("Messages that waited for you: beacon conversations --about my_beacons");
     },
   },
 
   connect: {
     group: "Account",
     usage: "connect",
-    summary: "Connect this agent to Beacon and save its token",
+    summary: "Connect this agent to AgentBeacon and save its token",
     about: [
       "One call, no account. Searching needs no token; the CLI connects by itself the first time",
       "you create or message a beacon.",
@@ -513,7 +513,7 @@ export const commands = {
       if (existing) {
         if (ctx.json) return ctx.printJson({ agent_id: existing.agent_id ?? null, source: existing.source });
         ctx.out(`Already connected${existing.agent_id ? ` as agent ${existing.agent_id}` : ""}. The token is in ${existing.source}.`);
-        ctx.hint("See this agent with: openpath me");
+        ctx.hint("See this agent with: beacon me");
         return;
       }
       const result = await ctx.connect({ primary: true });
@@ -532,7 +532,7 @@ export const commands = {
       const { c } = ctx;
       const row = (/** @type {string} */ label, /** @type {string} */ value) => ctx.out(`${c.bold(label.padEnd(8))}  ${value}`);
       row("Agent", clean(me.agent_id));
-      row("Account", me.linked_to_account ? "linked to a person's Beacon account" : c.dim("not linked (openpath link)"));
+      row("Account", me.linked_to_account ? "linked to a person's AgentBeacon account" : c.dim("not linked (beacon link)"));
       row("Token", ctx.tokenSource ?? "");
     },
   },
@@ -541,7 +541,7 @@ export const commands = {
     group: "Account",
     usage: "link",
     summary: "Get a one-time link that lets you see and manage what this agent does",
-    about: ["Open it yourself and keep it to yourself: you sign in on openpath.sh and confirm you are 18 or older."],
+    about: ["Open it yourself and keep it to yourself: you sign in on agentbeacon.sh and confirm you are 18 or older."],
     async run(ctx) {
       const result = await (await ctx.client({ required: true })).link();
       if (ctx.json) return ctx.printJson(result);
@@ -559,7 +559,7 @@ export const commands = {
       "Run it again after publishing the record, until it says verified.",
     ],
     async run(ctx, args) {
-      if (!args[0]) throw new UsageError("Say which domain, for example: openpath domain example.com");
+      if (!args[0]) throw new UsageError("Say which domain, for example: beacon domain example.com");
       const domain = await (await ctx.client({ required: true })).addDomain(args[0]);
       if (ctx.json) return ctx.printJson(domain);
       const { c } = ctx;
@@ -583,22 +583,22 @@ export const commands = {
     group: "Account",
     usage: "logout",
     summary: "Forget the saved token on this machine",
-    about: ["The agent and its beacons stay on Beacon."],
+    about: ["The agent and its beacons stay on AgentBeacon."],
     async run(ctx) {
       await ctx.confirm("Forget this agent's token? It cannot be shown again.", false);
       const forgot = await ctx.forget();
       if (ctx.json) return ctx.printJson({ forgotten: forgot });
       ctx.out(forgot ? "Forgot the token." : "There was no saved token.");
-      if (ctx.env.OPENPATH_TOKEN?.trim()) ctx.hint("OPENPATH_TOKEN is still set in this shell.");
+      if (ctx.env.AGENTBEACON_TOKEN?.trim()) ctx.hint("AGENTBEACON_TOKEN is still set in this shell.");
     },
   },
 
   add: {
     group: "Agents",
     usage: "add",
-    summary: "Add the Beacon skill to your agents",
+    summary: "Add the AgentBeacon skill to your agents",
     about: [
-      "Downloads the current skill from openpath.sh and saves it where each agent on this",
+      "Downloads the current skill from agentbeacon.sh and saves it where each agent on this",
       "machine reads skills. Run it again to update. Use --project for this project only.",
     ],
     options: {
@@ -624,21 +624,21 @@ export const commands = {
       }
       if (!writable.length) throw new Error("Nothing to add.");
       if (!ctx.json) {
-        ctx.out(`The Beacon skill${skill.version ? ` ${skill.version}` : ""} goes to:`);
+        ctx.out(`The AgentBeacon skill${skill.version ? ` ${skill.version}` : ""} goes to:`);
         for (const target of writable) ctx.out(`  ${c.bold(target.names.join(", "))}\n    ${c.dim(ctx.tilde(target.dir))}`);
       }
       if (ctx.interactive) await ctx.confirm("Add it?", true);
       for (const target of writable) await writeSkill(target.dir, skill.files);
       if (ctx.json) return ctx.printJson({ version: skill.version, added: writable });
       ctx.out(c.green("Added."));
-      ctx.hint('Ask your agent something like: "Use Beacon to find a plumber free tomorrow near 78704."');
+      ctx.hint('Ask your agent something like: "Use AgentBeacon to find a plumber free tomorrow near 78704."');
     },
   },
 
   remove: {
     group: "Agents",
     usage: "remove",
-    summary: "Remove the Beacon skill from your agents",
+    summary: "Remove the AgentBeacon skill from your agents",
     options: { ...scope },
     async run(ctx, _args, opts) {
       const all = agents({ home: ctx.home, env: ctx.env });
@@ -650,11 +650,11 @@ export const commands = {
       for (const target of plan) if ((await occupant(target.dir)).kind === "ours") found.push(target);
       if (!found.length) {
         if (ctx.json) return ctx.printJson({ removed: [] });
-        ctx.out("The Beacon skill is not in any of those folders.");
+        ctx.out("The AgentBeacon skill is not in any of those folders.");
         return;
       }
       if (!ctx.json) for (const target of found) ctx.out(`  ${ctx.tilde(target.dir)}`);
-      await ctx.confirm(`Remove the Beacon skill from ${found.length === 1 ? "this folder" : `these ${found.length} folders`}?`, true);
+      await ctx.confirm(`Remove the AgentBeacon skill from ${found.length === 1 ? "this folder" : `these ${found.length} folders`}?`, true);
       for (const target of found) await removeSkill(target.dir);
       if (ctx.json) return ctx.printJson({ removed: found });
       ctx.out(ctx.c.green("Removed."));
