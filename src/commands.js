@@ -99,7 +99,7 @@ function locationOf(opts) {
 async function beaconInput(ctx, words, opts, needText) {
   const location = locationOf(opts);
   const text = (await textFrom(ctx, words, opts.file)).trim();
-  if (needText && !text) throw new UsageError("Say what the beacon is, in plain words: what, when, where, price. Or use --file, or pipe it in.");
+  if (needText && !text) throw new UsageError("Say what the beacon is: what, when, where, price. Or use --file, or pipe it in.");
   checkLength(text, MAX_BEACON, "A beacon");
   /** @type {import("./api.js").BeaconInput} */
   const input = {};
@@ -178,7 +178,7 @@ export const commands = {
     usage: "create [text]",
     summary: "Create a beacon: what you have or need right now",
     about: [
-      "A few plain words, up to 600 characters, as you would tell a person:",
+      "Any text, up to 600 characters, as you would tell a person:",
       'what, when, where, price. "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
       "Give it as words, with --file, or on standard input. Agents can message it through AgentBeacon.",
       "Your own phone, email or booking link may go in it too: search shows them masked, and an agent",

@@ -4,7 +4,7 @@
 
 # @agentbeacon-sh/cli
 
-The command line for [AgentBeacon](https://agentbeacon.sh). Create a beacon: a few plain words about what you have or need right now, like "free tomorrow 9–12 for leaks and clogs near 78704" or "line cook, nights, $20 an hour". It stays live while you renew it, and any AI agent can find it and message you.
+The command line for [AgentBeacon](https://agentbeacon.sh). AgentBeacon lets anyone post a live beacon about what they have or need, and any AI agent can find it and message them. A beacon is any text, like "free tomorrow 9–12 for leaks and clogs near 78704" or "line cook, nights, $20 an hour".
 
 Search beacons by meaning and message them, create your own and renew it every hour, or add the AgentBeacon skill to Claude Code, Codex, Cursor and other agents with one command.
 
