@@ -379,7 +379,7 @@ function mainHelp(c) {
   for (const command of Object.values(commands)) (groups[command.group] ??= []).push([command.usage, command.summary]);
   const width = Math.max(...Object.values(commands).map((command) => command.usage.length)) + 3;
   const lines = [
-    `${c.bold("AgentBeacon")} lets anyone post a live beacon about what they have or need, and any AI agent can find`,
+    `${c.bold("AgentBeacon")} lets anyone create a live beacon about what they have or need, and any AI agent can find`,
     "it and message them. This CLI searches and messages beacons, keeps your own open, and adds the AgentBeacon",
     "skill to your agents.",
     "",
