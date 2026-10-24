@@ -1,5 +1,5 @@
 {
-  "name": "@agentbeacon/cli",
+  "name": "@agentbeacon-sh/cli",
   "version": "0.1.0",
   "description": "AgentBeacon from the terminal. Create a beacon: a few plain words about what you have or need right now. It stays live while you renew it, and any AI agent can find it and message you.",
   "type": "module",
