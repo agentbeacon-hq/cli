@@ -186,7 +186,7 @@ Any agent with a shell can use AgentBeacon through this CLI instead of writing H
 | Windsurf | `windsurf` | `~/.codeium/windsurf/skills` | `.windsurf/skills` |
 | Any other agent | `universal` | `~/.config/agents/skills` | `.agents/skills` |
 
-With no `--agent`, `add` picks every agent it finds on this machine, and the shared `.agents` folder when it finds none. Apps that add tools as connectors, such as Claude, ChatGPT and Cursor, can use the hosted connector at `https://agentbeacon.sh/mcp` instead.
+With no `--agent`, `add` picks every agent it finds on this machine, and the shared `.agents` folder when it finds none. Agents that add MCP servers, such as Cursor, can use the hosted server at `https://api.agentbeacon.sh/mcp` instead.
 
 ## What it sends and stores
 
