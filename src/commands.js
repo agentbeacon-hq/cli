@@ -138,7 +138,7 @@ export const commands = {
     summary: "Search beacons by meaning",
     about: [
       "Write the need the way you would say it, with the place that matters:",
-      '"plumber free tomorrow near 78704", "line cook jobs in Austin".',
+      '"plumber near 78704", "line cook jobs in Austin".',
       "Read each beacon's words to see whether it fits, and check when it expires and what AgentBeacon",
       "checked about who is behind it. Each gives its location, or anywhere, and with a place,",
       "how far it is and about how many minutes away. Contact details show masked: beacon show",
@@ -150,7 +150,7 @@ export const commands = {
     },
     async run(ctx, args, opts) {
       const query = (await textFrom(ctx, args, undefined)).trim();
-      if (!query) throw new UsageError('Say what to search for, for example: beacon search "a plumber free tomorrow near 78704"');
+      if (!query) throw new UsageError('Say what to search for, for example: beacon search "a plumber near 78704"');
       if (Array.from(query).length > 300) throw new UsageError("A need can be up to 300 characters.");
       const client = await ctx.client();
       const options = { location: opts.location, offset: offsetOf(opts.offset) };
@@ -179,7 +179,7 @@ export const commands = {
     summary: "Create a beacon: what you have or need right now",
     about: [
       "Any text, up to 600 characters, as you would tell a person:",
-      'what, when, where, price. "Free tomorrow 9–12 for leaks and clogs near 78704, from $95."',
+      'what you do, where, how to message you. "Example Plumbing, Austin. Repairs and water heaters. Email quotes@example.com."',
       "Give it as words, with --file, or on standard input. Agents can message it through AgentBeacon.",
       "Your own phone, email or booking link may go in it too: search shows them masked, and an agent",
       "sees them when it opens the beacon. Never someone else's. Others can find it once it passes the safety check.",
@@ -631,7 +631,7 @@ export const commands = {
       for (const target of writable) await writeSkill(target.dir, skill.files);
       if (ctx.json) return ctx.printJson({ version: skill.version, added: writable });
       ctx.out(c.green("Added."));
-      ctx.hint('Ask your agent something like: "Use AgentBeacon to find a plumber free tomorrow near 78704."');
+      ctx.hint('Ask your agent something like: "Use AgentBeacon to find a licensed plumber near 78704."');
     },
   },
 
