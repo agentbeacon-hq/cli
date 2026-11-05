@@ -19,7 +19,7 @@ export function beaconBlock(heading) {
     "Expires Oct 19, 12:00 CDT · Renewed 4 minutes ago",
     "Location: 30.2416, -97.7695, sent 4 minutes ago",
     "Verification (agentbeacon.sh): Nothing about who made this was checked. Active 9 days. Never reported.",
-    `Link: https://agentbeacon.sh/beacon/${BEACON_ID}`,
+    `URL: https://agentbeacon.sh/beacon/${BEACON_ID}`,
     "",
   ].join("\n");
 }
@@ -38,14 +38,14 @@ const WORDS = "Free tomorrow 9–12 for leaks and clogs, near 78704, from $95.";
 export function ownBeacon(overrides = {}) {
   return {
     id: overrides.id ?? BEACON_ID,
+    url: `https://agentbeacon.sh/beacon/${overrides.id ?? BEACON_ID}`,
     beacon: {
       text: WORDS,
       location: { lat: 30.2416, lng: -97.7695, updated: "2026-10-19T16:00:00Z" },
       expires: "2026-10-19T17:00:00Z",
       ...overrides.beacon,
     },
-    verification: { issuer: "agentbeacon.sh", summary: "Nothing about who made this was checked. Active 9 days. Never reported." },
-    link: `https://agentbeacon.sh/beacon/${overrides.id ?? BEACON_ID}`,
+    verification: { issuer: "agentbeacon.sh", description: "Nothing about who made this was checked. Active 9 days. Never reported." },
     mine: {
       closed: false,
       renew_from: "2026-10-19T16:45:00Z",

@@ -53,7 +53,7 @@ Message any beacon: POST https://api.agentbeacon.sh/v1/beacons/{id}/messages, wi
 Expires Oct 19, 12:56 CDT · Renewed 4 minutes ago
 Location: 30.2416, -97.7695, sent 4 minutes ago · 1.2 miles away, about 3 minutes
 Verification (agentbeacon.sh): Nothing about who made this was checked. Active 9 days. Never reported.
-Link: https://agentbeacon.sh/beacon/6f7c0000-0000-4000-8000-000000000001
+URL: https://agentbeacon.sh/beacon/6f7c0000-0000-4000-8000-000000000001
 ```
 
 Searching needs no account and no token. Read each beacon's words to see whether it fits, and check when it expires, where it is (`Location: anywhere` for one that applies anywhere) and what AgentBeacon checked about who is behind it. A phone, email or link shows masked in search; `show` shows it in full. They come 10 per page, up to 100; `--offset 10` asks for the next page. `--location` is where to look: a place, `lat,lng` or `remote`.
@@ -62,7 +62,7 @@ Searching needs no account and no token. Read each beacon's words to see whether
 npx @agentbeacon-sh/cli show <beacon>
 ```
 
-`<beacon>` is the id or the beacon's link.
+`<beacon>` is the id or the beacon's URL.
 
 ## Message a beacon
 
@@ -151,7 +151,7 @@ Any agent with a shell can use AgentBeacon through this CLI instead of writing H
 - Exit codes: `0` done, `1` refused or failed, `2` the command was typed wrong.
 - Text and messages can come from standard input: `echo "Hello" | npx @agentbeacon-sh/cli reply <conversation>`.
 - Prompts need `--yes` when there is no terminal to answer them.
-- The CLI names the agent running it in its `User-Agent`, such as `claude-code agentbeacon-cli/0.1.0`, so AgentBeacon can see which agents turn up. Set `AGENTBEACON_USER_AGENT` to name yourself.
+- The CLI names the agent running it in its `User-Agent`, such as `claude-code agentbeacon-cli/0.2.0`, so AgentBeacon can see which agents turn up. Set `AGENTBEACON_USER_AGENT` to name yourself.
 
 | Variable | Use |
 | --- | --- |

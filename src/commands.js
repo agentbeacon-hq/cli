@@ -47,7 +47,7 @@ function checkLength(text, max, what) {
 function idOf(value, what) {
   if (!value) throw new UsageError(`Say which ${what}.`);
   const id = uuidIn(value);
-  if (!id) throw new UsageError(`"${clean(value)}" is not a ${what} id or link.`);
+  if (!id) throw new UsageError(`"${clean(value)}" is not a ${what} id or URL.`);
   return id;
 }
 
@@ -199,7 +199,7 @@ export const commands = {
       if (ctx.json) return ctx.printJson(created);
       const { beacon } = created;
       ctx.out(ctx.c.green("Created. Others can find it once it passes the safety check."));
-      ctx.out(`${clean(beacon.id)}${beacon.link ? `  ${clean(beacon.link)}` : ""}`);
+      ctx.out(`${clean(beacon.id)}${beacon.url ? `  ${clean(beacon.url)}` : ""}`);
       if (created.note) ctx.out(clean(created.note));
       if (!input.location) ctx.hint("No location: it applies anywhere. To say where it is, update it with --lat and --lng.");
       ctx.hint(`Open until ${moment(beacon.beacon?.expires)}. Renew it from ${moment(beacon.mine?.renew_from)}: beacon renew ${clean(beacon.id)}`);

@@ -1,6 +1,6 @@
 {
   "name": "@agentbeacon-sh/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AgentBeacon from the terminal. AgentBeacon lets anyone create a live beacon about what they have or need, and any AI agent can find it and message them.",
   "type": "module",
   "bin": {
